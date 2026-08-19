@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="WECPBXR18.Core/WECPBXR18.Core.csproj" Id="fc129321-4227-43ec-ba14-feb094d9ef51" />
+  <Project Path="WECPBXR18.Hardware/WECPBXR18.Hardware.csproj" Id="59cb567c-a156-4e2e-9cc0-48fb8c3b9ea1" />
+  <Project Path="WECPBXR18.UI/WECPBXR18.UI.csproj" />
+</Solution>
