@@ -26,6 +26,13 @@ This software is designed to control **Behringer XR series** digital mixers (*XR
 ### Как сообщить о баге:
 Откройте [Issue](https://github.com/VRyzhkov/WECPBXR/issues) и подробно опишите проблему, указав модель вашего пульта (XR12/16/18) и шаги для воспроизведения бага.
 
+## Enforcement (Применение правил)
+
+Instances of abusive, harassing, or otherwise unacceptable behavior may be 
+reported to the project team at **46427038+VRyzhkov@users.noreply.github.com**.
+All complaints will be reviewed and investigated promptly and fairly.
+
+
 ## ❤️ Support the Project
 
 If this project saved your time or helped you in any way, feel free to buy the author a coffee:
