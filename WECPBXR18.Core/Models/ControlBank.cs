@@ -7,6 +7,8 @@ public sealed class ControlBank
 
     public ControlBank(
         int index,
+        string name,
+        RgbColor color,
         IEnumerable<ControlSlot> slots,
         IEnumerable<NavigationControl> navigationControls)
     {
@@ -15,12 +17,23 @@ public sealed class ControlBank
             throw new ArgumentOutOfRangeException(nameof(index), "Bank index cannot be negative.");
         }
 
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            throw new ArgumentException("Bank name is required.", nameof(name));
+        }
+
         Index = index;
+        Name = name;
+        Color = color;
         _slots = slots.ToList();
         _navigationControls = navigationControls.ToList();
     }
 
     public int Index { get; }
+
+    public string Name { get; private set; }
+
+    public RgbColor Color { get; private set; }
 
     public IReadOnlyList<ControlSlot> Slots => _slots;
 
@@ -29,5 +42,20 @@ public sealed class ControlBank
     public ControlSlot? FindSlotById(string id)
     {
         return _slots.FirstOrDefault(slot => string.Equals(slot.Id, id, StringComparison.OrdinalIgnoreCase));
+    }
+
+    public void Rename(string name)
+    {
+        if (string.IsNullOrWhiteSpace(name))
+        {
+            throw new ArgumentException("Bank name is required.", nameof(name));
+        }
+
+        Name = name;
+    }
+
+    public void SetColor(RgbColor color)
+    {
+        Color = color;
     }
 }

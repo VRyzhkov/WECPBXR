@@ -132,7 +132,7 @@ Prints MIDI commands.
 bank status
 ```
 
-Prints current Core bank state. The default bank contains:
+Prints current Core bank state. Each bank contains:
 
 - 24 knobs
 - 9 faders
@@ -140,6 +140,68 @@ Prints current Core bank state. The default bank contains:
 - 2 navigation buttons outside the assignable control array: Bank Previous and Bank Next
 
 For every assignable control, the console prints controller value, mixer value, and soft-takeover lock state.
+
+```text
+bank list
+```
+
+Prints all 7 banks. Default bank colors follow the rainbow order:
+
+- Red
+- Orange
+- Yellow
+- Green
+- Cyan
+- Blue
+- Violet
+
+```text
+bank next
+```
+
+Switches to the next bank. This is the software equivalent of `bankR`.
+
+```text
+bank prev
+```
+
+Switches to the previous bank. This is the software equivalent of `bankL`.
+
+```text
+bank select <1-7>
+```
+
+Selects a bank by number.
+
+Example:
+
+```text
+bank select 3
+```
+
+```text
+bank rename <name>
+```
+
+Renames the current bank. UI labels should use the current bank name and current bank control labels.
+
+Example:
+
+```text
+bank rename Vocals
+```
+
+```text
+bank color <r> <g> <b>
+```
+
+Changes the current bank RGB color in Core.
+
+Example:
+
+```text
+bank color 255 0 0
+```
 
 ```text
 help
@@ -171,5 +233,6 @@ quit   same as exit
 - MIDI diagnostics use `Melanchall.DryWetMidi`.
 - MIDI input events are printed as raw DryWetMIDI event text. Internally the hardware layer also normalizes Control Change, Note On, Note Off, and Pitch Bend events for future mapping logic.
 - Core currently uses a provisional default MIDI map: knobs and faders are sequential Control Change values, assignable buttons are sequential Note values. Real Worlde mappings should be adjusted after checking `midi connect <index>` logs.
+- Core stores an RGB color per bank. Sending that color to the physical Easycontrol bank buttons is not implemented yet because the controller-specific MIDI/SysEx protocol for button RGB is still unknown.
 - Windows Firewall can block incoming UDP responses. If scanning or live updates do not work, check firewall permissions for the console app.
 - The current scanner is intentionally simple: it searches only local `/24` subnet(s), not arbitrary routed networks.

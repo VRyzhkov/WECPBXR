@@ -4,17 +4,45 @@ namespace WECPBXR18.Core.Mapping;
 
 public sealed class MappingEngine
 {
+    private readonly BankSet _bankSet;
     private readonly MappingEngineOptions _options;
 
-    public MappingEngine(ControlBank currentBank, MappingEngineOptions? options = null)
+    public MappingEngine(BankSet bankSet, MappingEngineOptions? options = null)
     {
-        CurrentBank = currentBank ?? throw new ArgumentNullException(nameof(currentBank));
+        _bankSet = bankSet ?? throw new ArgumentNullException(nameof(bankSet));
         _options = options ?? new MappingEngineOptions();
     }
 
     public event EventHandler<SlotStateChangedEventArgs>? SlotStateChanged;
 
-    public ControlBank CurrentBank { get; }
+    public event EventHandler<BankChangedEventArgs>? BankChanged
+    {
+        add => _bankSet.BankChanged += value;
+        remove => _bankSet.BankChanged -= value;
+    }
+
+    public IReadOnlyList<ControlBank> Banks => _bankSet.Banks;
+
+    public ControlBank CurrentBank => _bankSet.CurrentBank;
+
+    public string CurrentBankName => CurrentBank.Name;
+
+    public RgbColor CurrentBankColor => CurrentBank.Color;
+
+    public ControlBank NextBank()
+    {
+        return _bankSet.NextBank();
+    }
+
+    public ControlBank PreviousBank()
+    {
+        return _bankSet.PreviousBank();
+    }
+
+    public ControlBank SelectBank(int index)
+    {
+        return _bankSet.SelectBank(index);
+    }
 
     public MappingResult HandleControllerChange(ControllerInputChange change)
     {

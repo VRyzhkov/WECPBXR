@@ -7,9 +7,15 @@ Console.WriteLine();
 
 Xr18NetworkScanner scanner = new();
 using MidiInputManager midi = new();
-MappingEngine mappingEngine = new(DefaultControlBankFactory.CreateBank());
+MappingEngine mappingEngine = new(DefaultControlBankFactory.CreateDefaultBankSet());
 Xr18MixerClient? mixer = null;
 string? connectedMixerAddress = null;
+
+mappingEngine.BankChanged += (_, eventArgs) =>
+{
+    PrintCurrentBank("BANK", eventArgs.CurrentBank);
+    Console.WriteLine("BANK physical bank button color command is not implemented yet; protocol is unknown.");
+};
 
 midi.ControlChanged += (_, eventArgs) =>
 {
@@ -319,8 +325,39 @@ static void HandleBankCommand(MappingEngine mappingEngine, string[] parts)
 
     switch (command)
     {
+        case "list":
+            PrintBankList(mappingEngine);
+            break;
+
         case "status":
             PrintBankStatus(mappingEngine);
+            break;
+
+        case "next":
+        case "r":
+        case "right":
+        case "bankr":
+            PrintCurrentBank("BANK", mappingEngine.NextBank());
+            break;
+
+        case "prev":
+        case "previous":
+        case "l":
+        case "left":
+        case "bankl":
+            PrintCurrentBank("BANK", mappingEngine.PreviousBank());
+            break;
+
+        case "select":
+            SelectBank(mappingEngine, parts);
+            break;
+
+        case "rename":
+            RenameBank(mappingEngine, parts);
+            break;
+
+        case "color":
+            SetBankColor(mappingEngine, parts);
             break;
 
         case "help":
@@ -336,7 +373,7 @@ static void HandleBankCommand(MappingEngine mappingEngine, string[] parts)
 
 static void PrintBankStatus(MappingEngine mappingEngine)
 {
-    Console.WriteLine($"Bank {mappingEngine.CurrentBank.Index}");
+    PrintCurrentBank("BANK", mappingEngine.CurrentBank);
     Console.WriteLine($"Assignable controls: {mappingEngine.CurrentBank.Slots.Count}");
     Console.WriteLine($"Navigation controls: {mappingEngine.CurrentBank.NavigationControls.Count}");
 
@@ -349,6 +386,71 @@ static void PrintBankStatus(MappingEngine mappingEngine)
     {
         Console.WriteLine($"BANK {navigationControl.Label} kind={navigationControl.Kind}");
     }
+}
+
+static void PrintBankList(MappingEngine mappingEngine)
+{
+    foreach (ControlBank bank in mappingEngine.Banks)
+    {
+        string marker = bank == mappingEngine.CurrentBank ? "*" : " ";
+        Console.WriteLine($"{marker} {bank.Index + 1}. {bank.Name} color={bank.Color.ToHexString()}");
+    }
+}
+
+static void SelectBank(MappingEngine mappingEngine, string[] parts)
+{
+    if (parts.Length < 3)
+    {
+        throw new ArgumentException("Bank number is required. Example: bank select 2");
+    }
+
+    if (!int.TryParse(parts[2], out int bankNumber))
+    {
+        throw new ArgumentException($"'{parts[2]}' is not a valid bank number.");
+    }
+
+    ControlBank bank = mappingEngine.SelectBank(bankNumber - 1);
+    PrintCurrentBank("BANK", bank);
+}
+
+static void RenameBank(MappingEngine mappingEngine, string[] parts)
+{
+    if (parts.Length < 3)
+    {
+        throw new ArgumentException("Bank name is required. Example: bank rename Vocals");
+    }
+
+    string name = string.Join(' ', parts.Skip(2));
+    mappingEngine.CurrentBank.Rename(name);
+    PrintCurrentBank("BANK", mappingEngine.CurrentBank);
+}
+
+static void SetBankColor(MappingEngine mappingEngine, string[] parts)
+{
+    if (parts.Length < 5)
+    {
+        throw new ArgumentException("RGB values are required. Example: bank color 255 0 0");
+    }
+
+    RgbColor color = new(ReadByte(parts[2], "red"), ReadByte(parts[3], "green"), ReadByte(parts[4], "blue"));
+    mappingEngine.CurrentBank.SetColor(color);
+    PrintCurrentBank("BANK", mappingEngine.CurrentBank);
+    Console.WriteLine("BANK physical bank button color command is not implemented yet; protocol is unknown.");
+}
+
+static byte ReadByte(string value, string name)
+{
+    if (!byte.TryParse(value, out byte result))
+    {
+        throw new ArgumentException($"'{value}' is not a valid {name} value. Use 0-255.");
+    }
+
+    return result;
+}
+
+static void PrintCurrentBank(string prefix, ControlBank bank)
+{
+    Console.WriteLine($"{prefix} current={bank.Index + 1}. {bank.Name} color={bank.Color.ToHexString()} rgb=({bank.Color.Red},{bank.Color.Green},{bank.Color.Blue})");
 }
 
 static void PrintSlotState(string prefix, ControlSlotSnapshot slot)
@@ -467,8 +569,14 @@ static void PrintBankHelp()
 {
     Console.WriteLine();
     Console.WriteLine("Bank commands:");
-    Console.WriteLine("  bank status  Show current bank control states");
-    Console.WriteLine("  bank help    Show bank commands");
+    Console.WriteLine("  bank list             Show all banks");
+    Console.WriteLine("  bank status           Show current bank control states");
+    Console.WriteLine("  bank next             Switch to next bank, same as bankR");
+    Console.WriteLine("  bank prev             Switch to previous bank, same as bankL");
+    Console.WriteLine("  bank select <1-7>     Select bank by number");
+    Console.WriteLine("  bank rename <name>    Rename current bank");
+    Console.WriteLine("  bank color <r> <g> <b>");
+    Console.WriteLine("  bank help             Show bank commands");
     Console.WriteLine();
 }
 
@@ -487,6 +595,9 @@ static void PrintHelp()
     Console.WriteLine("  midi connect <index>     Connect and log MIDI changes");
     Console.WriteLine("  midi disconnect          Disconnect MIDI input device");
     Console.WriteLine("  midi status              Show MIDI connection status");
+    Console.WriteLine("  bank list                Show all banks");
+    Console.WriteLine("  bank next                Switch to next bank");
+    Console.WriteLine("  bank prev                Switch to previous bank");
     Console.WriteLine("  bank status              Show current bank control states");
     Console.WriteLine("  help                     Show commands");
     Console.WriteLine("  exit                     Stop diagnostics");
