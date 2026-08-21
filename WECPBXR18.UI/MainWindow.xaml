@@ -19,14 +19,37 @@
     <Window.Resources>
         <Style x:Key="PanelButtonStyle" TargetType="{x:Type Button}">
             <Setter Property="Height" Value="28" />
-            <Setter Property="MinWidth" Value="72" />
-            <Setter Property="Padding" Value="8,0" />
+            <Setter Property="MinWidth" Value="42" />
+            <Setter Property="Padding" Value="6,0" />
             <Setter Property="Foreground" Value="#EAF0F7" />
             <Setter Property="Background" Value="#303640" />
             <Setter Property="BorderBrush" Value="#68727F" />
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="FontSize" Value="10" />
             <Setter Property="FontWeight" Value="SemiBold" />
+        </Style>
+
+        <Style x:Key="PanelTextBoxStyle" TargetType="{x:Type TextBox}">
+            <Setter Property="Height" Value="28" />
+            <Setter Property="Width" Value="78" />
+            <Setter Property="Margin" Value="0,0,6,0" />
+            <Setter Property="Padding" Value="6,4" />
+            <Setter Property="Foreground" Value="#EAF0F7" />
+            <Setter Property="Background" Value="#171A20" />
+            <Setter Property="BorderBrush" Value="#59616E" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="FontSize" Value="10" />
+        </Style>
+
+        <Style x:Key="PanelComboBoxStyle" TargetType="{x:Type ComboBox}">
+            <Setter Property="Height" Value="28" />
+            <Setter Property="Width" Value="110" />
+            <Setter Property="Margin" Value="0,0,6,0" />
+            <Setter Property="Foreground" Value="#11151B" />
+            <Setter Property="Background" Value="#C2CAD4" />
+            <Setter Property="BorderBrush" Value="#59616E" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="FontSize" Value="10" />
         </Style>
 
         <Style x:Key="ControllerButtonStyle" TargetType="{x:Type Button}">
@@ -270,12 +293,23 @@
             <Button Canvas.Left="82" Canvas.Top="320" Content="SOLO" Style="{StaticResource ControllerButtonStyle}" />
             <Button Canvas.Left="82" Canvas.Top="382" Content="SEND ALL" Style="{StaticResource ControllerButtonStyle}" />
 
-            <StackPanel Canvas.Left="82" Canvas.Top="680" Orientation="Horizontal">
-                <Button Content="Load map" Command="{Binding LoadMapCommand}" Style="{StaticResource PanelButtonStyle}" Margin="0,0,8,0" />
-                <Button Content="Bank L" Command="{Binding BankPreviousCommand}" Style="{StaticResource PanelButtonStyle}" Margin="0,0,8,0" />
-                <Button Content="Bank R" Command="{Binding BankNextCommand}" Style="{StaticResource PanelButtonStyle}" Margin="0,0,8,0" />
-                <Button Content="Sim fader" Command="{Binding SimulateFaderCommand}" Style="{StaticResource PanelButtonStyle}" Margin="0,0,8,0" />
-                <Button Content="Sim mute" Command="{Binding SimulateMuteCommand}" Style="{StaticResource PanelButtonStyle}" />
+            <StackPanel Canvas.Left="82" Canvas.Top="674" Orientation="Horizontal">
+                <TextBox Text="{Binding MixerAddress, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                         ToolTip="{Binding MixerStatus}"
+                         Style="{StaticResource PanelTextBoxStyle}" />
+                <Button Content="X+" Command="{Binding ConnectMixerCommand}" ToolTip="{Binding MixerStatus}" Style="{StaticResource PanelButtonStyle}" Margin="0,0,6,0" />
+                <Button Content="X-" Command="{Binding DisconnectMixerCommand}" ToolTip="{Binding MixerStatus}" Style="{StaticResource PanelButtonStyle}" Margin="0,0,10,0" />
+                <ComboBox ItemsSource="{Binding MidiDevices}"
+                          SelectedItem="{Binding SelectedMidiDevice, Mode=TwoWay}"
+                          DisplayMemberPath="Name"
+                          ToolTip="{Binding MidiStatus}"
+                          Style="{StaticResource PanelComboBoxStyle}" />
+                <Button Content="R" Command="{Binding RefreshMidiDevicesCommand}" ToolTip="{Binding MidiStatus}" Style="{StaticResource PanelButtonStyle}" Margin="0,0,6,0" />
+                <Button Content="M+" Command="{Binding ConnectMidiCommand}" ToolTip="{Binding MidiStatus}" Style="{StaticResource PanelButtonStyle}" Margin="0,0,6,0" />
+                <Button Content="M-" Command="{Binding DisconnectMidiCommand}" ToolTip="{Binding MidiStatus}" Style="{StaticResource PanelButtonStyle}" Margin="0,0,10,0" />
+                <Button Content="Map" Command="{Binding LoadMapCommand}" Style="{StaticResource PanelButtonStyle}" Margin="0,0,6,0" />
+                <Button Content="SF" Command="{Binding SimulateFaderCommand}" Style="{StaticResource PanelButtonStyle}" Margin="0,0,6,0" />
+                <Button Content="SM" Command="{Binding SimulateMuteCommand}" Style="{StaticResource PanelButtonStyle}" />
             </StackPanel>
 
             <ItemsControl ItemsSource="{Binding Knobs}" ItemTemplate="{StaticResource KnobTemplate}">

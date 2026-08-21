@@ -10,6 +10,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\WECPBXR18.Core\WECPBXR18.Core.csproj" />
+    <ProjectReference Include="..\WECPBXR18.Hardware\WECPBXR18.Hardware.csproj" />
   </ItemGroup>
 
   <ItemGroup>

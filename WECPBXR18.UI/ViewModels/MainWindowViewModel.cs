@@ -1,42 +1,61 @@
 using System.Collections.ObjectModel;
 using System.Globalization;
 using System.IO;
+using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
+using Rug.Osc;
 using WECPBXR18.Core.Mapping;
 using WECPBXR18.Core.Models;
+using WECPBXR18.Hardware;
 
 namespace WECPBXR18.UI.ViewModels;
 
-public sealed class MainWindowViewModel : ObservableObject
+public sealed class MainWindowViewModel : ObservableObject, IDisposable
 {
     private readonly BankSet _bankSet;
     private readonly MappingEngine _mappingEngine;
     private readonly MidiMapEditor _mapEditor;
+    private readonly MidiInputManager _midi;
     private readonly Dictionary<string, ControlSlotViewModel> _slotLookup = new(StringComparer.OrdinalIgnoreCase);
+    private readonly object _mappingLock = new();
 
     private string _bankTitle = string.Empty;
     private string _bankColorText = string.Empty;
     private Brush _bankBrush = Brushes.Red;
     private Brush _bankTextBrush = Brushes.Black;
     private string _status = "Ready";
+    private string _mixerAddress = "192.168.1.100";
+    private string _mixerStatus = "XR18: disconnected";
+    private string _midiStatus = "MIDI: disconnected";
+    private MidiInputDeviceInfo? _selectedMidiDevice;
+    private Xr18MixerClient? _mixer;
+    private bool _disposed;
 
     public MainWindowViewModel()
     {
         _bankSet = DefaultControlBankFactory.CreateDefaultBankSet();
         _mappingEngine = new MappingEngine(_bankSet);
         _mapEditor = new MidiMapEditor(_bankSet);
+        _midi = new MidiInputManager();
 
         _mappingEngine.BankChanged += (_, _) => RefreshCurrentBank();
-        _mappingEngine.SlotStateChanged += (_, eventArgs) => UpdateSlot(eventArgs.Slot);
+        _mappingEngine.SlotStateChanged += (_, eventArgs) => RunOnUiThread(() => UpdateSlot(eventArgs.Slot));
+        _midi.ControlChanged += OnMidiControlChanged;
 
         LoadMapCommand = new RelayCommand(LoadMap);
         BankPreviousCommand = new RelayCommand(() => _mappingEngine.PreviousBank());
         BankNextCommand = new RelayCommand(() => _mappingEngine.NextBank());
         SimulateFaderCommand = new RelayCommand(SimulateFader);
         SimulateMuteCommand = new RelayCommand(SimulateMute);
+        RefreshMidiDevicesCommand = new RelayCommand(RefreshMidiDevices);
+        ConnectMidiCommand = new RelayCommand(ConnectMidi);
+        DisconnectMidiCommand = new RelayCommand(DisconnectMidi);
+        ConnectMixerCommand = new AsyncRelayCommand(ConnectMixerAsync);
+        DisconnectMixerCommand = new AsyncRelayCommand(DisconnectMixerAsync);
 
         TryAutoLoadMap();
+        RefreshMidiDevices();
         RefreshCurrentBank();
     }
 
@@ -45,6 +64,8 @@ public sealed class MainWindowViewModel : ObservableObject
     public ObservableCollection<ControlSlotViewModel> Faders { get; } = new();
 
     public ObservableCollection<ControlSlotViewModel> Buttons { get; } = new();
+
+    public ObservableCollection<MidiInputDeviceInfo> MidiDevices { get; } = new();
 
     public ICommand LoadMapCommand { get; }
 
@@ -55,6 +76,40 @@ public sealed class MainWindowViewModel : ObservableObject
     public ICommand SimulateFaderCommand { get; }
 
     public ICommand SimulateMuteCommand { get; }
+
+    public ICommand RefreshMidiDevicesCommand { get; }
+
+    public ICommand ConnectMidiCommand { get; }
+
+    public ICommand DisconnectMidiCommand { get; }
+
+    public ICommand ConnectMixerCommand { get; }
+
+    public ICommand DisconnectMixerCommand { get; }
+
+    public MidiInputDeviceInfo? SelectedMidiDevice
+    {
+        get => _selectedMidiDevice;
+        set => SetProperty(ref _selectedMidiDevice, value);
+    }
+
+    public string MixerAddress
+    {
+        get => _mixerAddress;
+        set => SetProperty(ref _mixerAddress, value);
+    }
+
+    public string MixerStatus
+    {
+        get => _mixerStatus;
+        private set => SetProperty(ref _mixerStatus, value);
+    }
+
+    public string MidiStatus
+    {
+        get => _midiStatus;
+        private set => SetProperty(ref _midiStatus, value);
+    }
 
     public string BankTitle
     {
@@ -113,6 +168,99 @@ public sealed class MainWindowViewModel : ObservableObject
         RefreshCurrentBank();
     }
 
+    private void RefreshMidiDevices()
+    {
+        try
+        {
+            string? selectedName = SelectedMidiDevice?.Name;
+            MidiDevices.Clear();
+
+            foreach (MidiInputDeviceInfo device in _midi.GetInputDevices())
+            {
+                MidiDevices.Add(device);
+            }
+
+            SelectedMidiDevice = MidiDevices.FirstOrDefault(device => device.Name == selectedName)
+                ?? MidiDevices.FirstOrDefault();
+
+            MidiStatus = MidiDevices.Count == 0
+                ? "MIDI: no input devices"
+                : $"MIDI: {MidiDevices.Count} input device(s)";
+        }
+        catch (Exception exception)
+        {
+            MidiStatus = $"MIDI: {exception.Message}";
+        }
+    }
+
+    private void ConnectMidi()
+    {
+        if (SelectedMidiDevice is null)
+        {
+            MidiStatus = "MIDI: select input device";
+            return;
+        }
+
+        try
+        {
+            _midi.ConnectByIndex(SelectedMidiDevice.Index);
+            MidiStatus = $"MIDI: connected {SelectedMidiDevice.Name}";
+        }
+        catch (Exception exception)
+        {
+            MidiStatus = $"MIDI: {exception.Message}";
+        }
+    }
+
+    private void DisconnectMidi()
+    {
+        _midi.Disconnect();
+        MidiStatus = "MIDI: disconnected";
+    }
+
+    private async Task ConnectMixerAsync()
+    {
+        if (string.IsNullOrWhiteSpace(MixerAddress))
+        {
+            MixerStatus = "XR18: enter address";
+            return;
+        }
+
+        await DisconnectMixerAsync().ConfigureAwait(true);
+
+        Xr18MixerClient mixer = new(new Xr18ConnectionSettings(MixerAddress.Trim()));
+        mixer.MessageReceived += OnMixerMessageReceived;
+
+        try
+        {
+            MixerStatus = $"XR18: connecting {MixerAddress.Trim()}";
+            await mixer.StartAsync().ConfigureAwait(true);
+            _mixer = mixer;
+            MixerStatus = $"XR18: connected {MixerAddress.Trim()}";
+        }
+        catch (Exception exception)
+        {
+            mixer.MessageReceived -= OnMixerMessageReceived;
+            await mixer.DisposeAsync().ConfigureAwait(true);
+            MixerStatus = $"XR18: {exception.Message}";
+        }
+    }
+
+    private async Task DisconnectMixerAsync()
+    {
+        if (_mixer is null)
+        {
+            MixerStatus = "XR18: disconnected";
+            return;
+        }
+
+        Xr18MixerClient mixer = _mixer;
+        _mixer = null;
+        mixer.MessageReceived -= OnMixerMessageReceived;
+        await mixer.DisposeAsync().ConfigureAwait(true);
+        MixerStatus = "XR18: disconnected";
+    }
+
     private void RefreshCurrentBank()
     {
         ControlBank bank = _mappingEngine.CurrentBank;
@@ -158,28 +306,94 @@ public sealed class MainWindowViewModel : ObservableObject
 
     private void SimulateFader()
     {
-        _mappingEngine.HandleMixerChange(new MixerValueChange("/ch/01/mix/fader", 0.62));
-        MappingResult result = _mappingEngine.HandleControllerChange(new ControllerInputChange(
-            MidiMessageKind.ControlChange,
-            Channel: 1,
-            Number: 26,
-            Value: 79 / 127.0,
-            RawEvent: "ui sim fader"));
+        MappingResult result;
+
+        lock (_mappingLock)
+        {
+            _mappingEngine.HandleMixerChange(new MixerValueChange("/ch/01/mix/fader", 0.62));
+            result = _mappingEngine.HandleControllerChange(new ControllerInputChange(
+                MidiMessageKind.ControlChange,
+                Channel: 1,
+                Number: 26,
+                Value: 79 / 127.0,
+                RawEvent: "ui sim fader"));
+        }
 
         Status = DescribeResult("Fader simulation", result);
     }
 
     private void SimulateMute()
     {
-        _mappingEngine.HandleMixerChange(new MixerValueChange("/ch/01/mix/on", 1));
-        MappingResult result = _mappingEngine.HandleControllerChange(new ControllerInputChange(
-            MidiMessageKind.NoteOn,
-            Channel: 1,
-            Number: 34,
-            Value: 1,
-            RawEvent: "ui sim mute"));
+        MappingResult result;
+
+        lock (_mappingLock)
+        {
+            _mappingEngine.HandleMixerChange(new MixerValueChange("/ch/01/mix/on", 1));
+            result = _mappingEngine.HandleControllerChange(new ControllerInputChange(
+                MidiMessageKind.NoteOn,
+                Channel: 1,
+                Number: 34,
+                Value: 1,
+                RawEvent: "ui sim mute"));
+        }
 
         Status = DescribeResult("Mute simulation", result);
+    }
+
+    private async void OnMidiControlChanged(object? sender, MidiControlChangedEventArgs eventArgs)
+    {
+        MappingResult result;
+
+        lock (_mappingLock)
+        {
+            result = _mappingEngine.HandleControllerChange(ToControllerInputChange(eventArgs.Change));
+        }
+
+        RunOnUiThread(() =>
+        {
+            MidiStatus = $"MIDI: {eventArgs.Change.Kind} ch={eventArgs.Change.Channel} #{eventArgs.Change.Number} value={eventArgs.Change.Value}";
+            Status = DescribeResult("MIDI", result);
+        });
+
+        if (result.MixerCommand is not null && _mixer is not null)
+        {
+            try
+            {
+                await _mixer.SendOscValueAsync(
+                    result.MixerCommand.OscAddress,
+                    result.MixerCommand.Value,
+                    sendInteger: result.MixerCommand.ValueKind == MixerValueKind.Toggle).ConfigureAwait(false);
+            }
+            catch (Exception exception)
+            {
+                RunOnUiThread(() => MixerStatus = $"XR18 send: {exception.Message}");
+            }
+        }
+    }
+
+    private void OnMixerMessageReceived(object? sender, Xr18OscMessageReceivedEventArgs eventArgs)
+    {
+        if (!TryCreateMixerValueChange(eventArgs.Message.Address, GetFirstOscArgument(eventArgs.Message), out MixerValueChange? change) ||
+            change is null)
+        {
+            return;
+        }
+
+        MappingResult result;
+
+        lock (_mappingLock)
+        {
+            result = _mappingEngine.HandleMixerChange(change);
+        }
+
+        if (result.IsMapped)
+        {
+            RunOnUiThread(() =>
+            {
+                MixerStatus = FormattableString.Invariant($"XR18: {change.OscAddress}={change.Value:0.###}");
+                Status = DescribeResult("XR18", result);
+            });
+        }
     }
 
     private static ControlSlotViewModel CreateSlotViewModel(ControlSlotSnapshot snapshot)
@@ -228,6 +442,72 @@ public sealed class MainWindowViewModel : ObservableObject
             : $"{prefix}: {result.Message}";
     }
 
+    private static ControllerInputChange ToControllerInputChange(MidiControlChange change)
+    {
+        return new ControllerInputChange(
+            ToCoreMidiMessageKind(change.Kind),
+            change.Channel,
+            change.Number,
+            change.NormalizedValue,
+            change.RawEvent);
+    }
+
+    private static MidiMessageKind ToCoreMidiMessageKind(WECPBXR18.Hardware.MidiControlKind kind)
+    {
+        return kind switch
+        {
+            WECPBXR18.Hardware.MidiControlKind.ControlChange => MidiMessageKind.ControlChange,
+            WECPBXR18.Hardware.MidiControlKind.NoteOn => MidiMessageKind.NoteOn,
+            WECPBXR18.Hardware.MidiControlKind.NoteOff => MidiMessageKind.NoteOff,
+            WECPBXR18.Hardware.MidiControlKind.PitchBend => MidiMessageKind.PitchBend,
+            _ => MidiMessageKind.Other
+        };
+    }
+
+    private static object? GetFirstOscArgument(OscMessage message)
+    {
+        return message.Count == 0 ? null : message[0];
+    }
+
+    private static bool TryCreateMixerValueChange(string oscAddress, object? value, out MixerValueChange? change)
+    {
+        change = null;
+
+        if (!TryReadOscNumber(value, out double number))
+        {
+            return false;
+        }
+
+        change = new MixerValueChange(oscAddress, number);
+        return true;
+    }
+
+    private static bool TryReadOscNumber(object? value, out double number)
+    {
+        switch (value)
+        {
+            case float floatValue:
+                number = floatValue;
+                return true;
+
+            case double doubleValue:
+                number = doubleValue;
+                return true;
+
+            case int intValue:
+                number = intValue;
+                return true;
+
+            case bool boolValue:
+                number = boolValue ? 1.0 : 0.0;
+                return true;
+
+            default:
+                number = 0;
+                return false;
+        }
+    }
+
     private static string GetDefaultMidiMapPath()
     {
         string outputPath = Path.Combine(AppContext.BaseDirectory, "midi-map.json");
@@ -246,5 +526,30 @@ public sealed class MainWindowViewModel : ObservableObject
     {
         double luminance = (0.299 * color.Red) + (0.587 * color.Green) + (0.114 * color.Blue);
         return luminance > 150 ? Brushes.Black : Brushes.White;
+    }
+
+    private static void RunOnUiThread(Action action)
+    {
+        Application.Current.Dispatcher.Invoke(action);
+    }
+
+    public void Dispose()
+    {
+        if (_disposed)
+        {
+            return;
+        }
+
+        _midi.ControlChanged -= OnMidiControlChanged;
+        _midi.Dispose();
+
+        if (_mixer is not null)
+        {
+            _mixer.MessageReceived -= OnMixerMessageReceived;
+            _mixer.Dispose();
+            _mixer = null;
+        }
+
+        _disposed = true;
     }
 }
