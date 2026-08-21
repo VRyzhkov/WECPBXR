@@ -68,7 +68,7 @@ scan
 
 Same as `mixer scan`.
 
-After mixer connection, incoming OSC messages are printed to the console.
+After mixer connection, incoming OSC messages are printed to the console and numeric values are passed into Core mapping. If the OSC address is assigned in the current bank, the matching slot's mixer value is updated.
 
 ```text
 mute <1-18>
@@ -105,6 +105,7 @@ midi connect <index>
 ```
 
 Connects to a MIDI input device and starts printing incoming MIDI events.
+Mapped MIDI events are converted by Core into OSC-ready mixer commands. If XR18 is connected, the console sends those commands immediately; if XR18 is not connected, it only prints the command that would be sent.
 
 Example:
 
@@ -338,6 +339,8 @@ sim midi cc 1 26 80
 sim midi note 1 34 127
 ```
 
+If the simulated control is mapped and unlocked, the console prints `OSC ready` with the generated OSC address and value. Simulation never sends to XR18.
+
 ```text
 sim mixer <oscAddress> <0.0-1.0>
 ```
@@ -408,6 +411,9 @@ quit   same as exit
 - Core currently uses a provisional default MIDI map: knobs and faders are sequential Control Change values, assignable buttons are sequential Note values. Real Worlde mappings should be adjusted after checking `midi connect <index>` logs.
 - Core stores an RGB color per bank. Sending that color to the physical Easycontrol bank buttons is not implemented yet because the controller-specific MIDI/SysEx protocol for button RGB is still unknown.
 - `sim` commands do not send anything to XR18 or a MIDI device. They only exercise Core mapping state inside the console app.
+- Core is now responsible for generating outgoing OSC commands from mapped controller changes. The hardware layer only sends the already generated OSC address/value.
+- Continuous controls (`level`, `pan`) use soft takeover: Core sends OSC only after both controller and mixer values are known and close enough to unlock the slot.
+- Toggle controls use `ToggleByPress`: Core reacts only to press events, reads the current mixer value, inverts it, and generates one OSC command. Release events are ignored.
 - XR18 command catalog currently includes channel main fader, mute, pan, bus/aux send level, FX send level, bus send on/off, and FX send on/off.
 - On XR18/X-Air, AUX outputs are normally fed by bus sends. The `aux` command is therefore an alias for bus sends 1-6.
 - FX send commands currently assume FX sends use send indexes 7-10 (`FX 1` -> `/ch/NN/mix/07/level`). This should be verified on hardware.

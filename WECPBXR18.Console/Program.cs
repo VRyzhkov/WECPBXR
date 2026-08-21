@@ -1,3 +1,5 @@
+using System.Globalization;
+using Rug.Osc;
 using WECPBXR18.Core.Mapping;
 using WECPBXR18.Core.Models;
 using WECPBXR18.Hardware;
@@ -13,6 +15,7 @@ MidiMapEditor mapEditor = new(bankSet);
 string midiMapPath = GetDefaultMidiMapPath();
 Xr18MixerClient? mixer = null;
 string? connectedMixerAddress = null;
+object mappingLock = new();
 
 mappingEngine.BankChanged += (_, eventArgs) =>
 {
@@ -24,7 +27,13 @@ midi.ControlChanged += async (_, eventArgs) =>
 {
     try
     {
-        MappingResult result = mappingEngine.HandleControllerChange(ToControllerInputChange(eventArgs.Change));
+        MappingResult result;
+
+        lock (mappingLock)
+        {
+            result = mappingEngine.HandleControllerChange(ToControllerInputChange(eventArgs.Change));
+        }
+
         PrintMappingResult("CORE", result);
         await SendMixerCommandIfConnectedAsync(mixer, result.MixerCommand);
     }
@@ -88,6 +97,8 @@ while (true)
                 (mixer, connectedMixerAddress) = await HandleMixerCommandAsync(
                     mixer,
                     connectedMixerAddress,
+                    mappingEngine,
+                    mappingLock,
                     scanner,
                     parts);
                 break;
@@ -237,6 +248,8 @@ static async Task<IReadOnlyList<Xr18DiscoveredMixer>> PrintScanResultsAsync(Xr18
 static async Task<(Xr18MixerClient? Mixer, string? Address)> HandleMixerCommandAsync(
     Xr18MixerClient? currentMixer,
     string? connectedMixerAddress,
+    MappingEngine mappingEngine,
+    object mappingLock,
     Xr18NetworkScanner scanner,
     string[] parts)
 {
@@ -260,6 +273,25 @@ static async Task<(Xr18MixerClient? Mixer, string? Address)> HandleMixerCommandA
             }
 
             Xr18MixerClient mixer = new(new Xr18ConnectionSettings(mixerAddress));
+            mixer.MessageReceived += (_, eventArgs) =>
+            {
+                if (!TryCreateMixerValueChange(eventArgs.Message, out MixerValueChange? change) || change is null)
+                {
+                    return;
+                }
+
+                MappingResult result;
+
+                lock (mappingLock)
+                {
+                    result = mappingEngine.HandleMixerChange(change);
+                }
+
+                if (result.IsMapped)
+                {
+                    PrintMappingResult("MIXER", result);
+                }
+            };
 
             Console.WriteLine($"Connecting to XR18 at {mixerAddress}:{Xr18ConnectionSettings.DefaultOscPort}...");
 
@@ -679,6 +711,45 @@ static void SimulateMixer(MappingEngine mappingEngine, string[] parts)
     PrintMappingResult("SIM MIXER", result);
 }
 
+static bool TryCreateMixerValueChange(OscMessage message, out MixerValueChange? change)
+{
+    change = null;
+
+    if (message.Count == 0 || !TryReadOscNumber(message[0], out double value))
+    {
+        return false;
+    }
+
+    change = new MixerValueChange(message.Address, value);
+    return true;
+}
+
+static bool TryReadOscNumber(object? value, out double number)
+{
+    switch (value)
+    {
+        case float floatValue:
+            number = floatValue;
+            return true;
+
+        case double doubleValue:
+            number = doubleValue;
+            return true;
+
+        case int intValue:
+            number = intValue;
+            return true;
+
+        case bool boolValue:
+            number = boolValue ? 1.0 : 0.0;
+            return true;
+
+        default:
+            number = 0;
+            return false;
+    }
+}
+
 static void PrintMappingResult(string prefix, MappingResult result)
 {
     if (result.Slot is not null)
@@ -712,7 +783,7 @@ static async Task SendMixerCommandIfConnectedAsync(Xr18MixerClient? mixer, Mixer
 
 static void PrintMixerOutputCommand(string prefix, MixerOutputCommand command)
 {
-    Console.WriteLine($"{prefix} OSC ready: {command.OscAddress} {command.Value:0.###} kind={command.ValueKind}");
+    Console.WriteLine($"{prefix} OSC ready: {command.OscAddress} {command.Value.ToString("0.###", CultureInfo.InvariantCulture)} kind={command.ValueKind}");
 }
 
 static double ReadDouble(string value, string name)
@@ -916,7 +987,7 @@ static void PrintSlotState(string prefix, ControlSlotSnapshot slot)
 
 static string FormatValue(double? value)
 {
-    return value is null ? "<none>" : value.Value.ToString("0.000");
+    return value is null ? "<none>" : value.Value.ToString("0.000", CultureInfo.InvariantCulture);
 }
 
 static void HandleMidiCommand(MidiInputManager midi, string[] parts)

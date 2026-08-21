@@ -62,9 +62,7 @@ public sealed class MappingEngine
         ControlSlotSnapshot snapshot = slot.Snapshot();
         SlotStateChanged?.Invoke(this, new SlotStateChangedEventArgs(snapshot, MappingUpdateKind.Controller));
 
-        string? message = mixerCommand is null && slot.MixerBinding?.ValueKind == MixerValueKind.Toggle
-            ? "Toggle release ignored or mixer value is unknown."
-            : null;
+        string? message = CreateControllerMessage(slot, change, mixerCommand);
 
         return MappingResult.Mapped(snapshot, message, mixerCommand);
     }
@@ -94,6 +92,12 @@ public sealed class MappingEngine
 
     private void UpdateTakeoverState(ControlSlot slot)
     {
+        if (slot.MixerBinding?.ValueKind == MixerValueKind.Toggle)
+        {
+            slot.SetLocked(slot.MixerValue is null);
+            return;
+        }
+
         if (slot.ControllerValue is null || slot.MixerValue is null)
         {
             slot.SetLocked(true);
@@ -116,6 +120,47 @@ public sealed class MappingEngine
             MixerValueKind.Toggle => CreateToggleByPressCommand(slot, change),
             _ => CreateContinuousCommand(slot, change)
         };
+    }
+
+    private static string? CreateControllerMessage(
+        ControlSlot slot,
+        ControllerInputChange change,
+        MixerOutputCommand? mixerCommand)
+    {
+        if (mixerCommand is not null)
+        {
+            return null;
+        }
+
+        if (slot.MixerBinding is null)
+        {
+            return "OSC blocked: slot has no mixer binding.";
+        }
+
+        if (slot.MixerBinding.ValueKind == MixerValueKind.Toggle)
+        {
+            if (!IsPress(change))
+            {
+                return "Toggle release ignored.";
+            }
+
+            return slot.MixerValue is null
+                ? "Toggle blocked: mixer value is unknown."
+                : "Toggle blocked.";
+        }
+
+        if (slot.MixerValue is null)
+        {
+            return "OSC blocked: waiting for mixer value for soft takeover.";
+        }
+
+        if (slot.IsLocked)
+        {
+            return FormattableString.Invariant(
+                $"OSC blocked by soft takeover: controller={slot.ControllerValue:0.000} mixer={slot.MixerValue:0.000}.");
+        }
+
+        return "OSC blocked.";
     }
 
     private static MixerOutputCommand? CreateContinuousCommand(ControlSlot slot, ControllerInputChange change)
