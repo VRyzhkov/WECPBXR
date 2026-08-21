@@ -1,0 +1,68 @@
+{
+  "Version": 1,
+  "Banks": [
+    {
+      "Index": 0,
+      "Name": "Red",
+      "Color": {
+        "Red": 255,
+        "Green": 0,
+        "Blue": 0
+      },
+      "Slots": [
+        {
+          "Id": "fader-01",
+          "Label": "Ch 1 Main",
+          "Midi": {
+            "Kind": "ControlChange",
+            "Channel": 1,
+            "Number": 25
+          },
+          "Mixer": {
+            "OscAddress": "/ch/01/mix/fader",
+            "ValueKind": "Level"
+          }
+        },
+        {
+          "Id": "knob-01",
+          "Label": "Ch 1 Bus 1",
+          "Midi": {
+            "Kind": "ControlChange",
+            "Channel": 1,
+            "Number": 1
+          },
+          "Mixer": {
+            "OscAddress": "/ch/01/mix/01/level",
+            "ValueKind": "Level"
+          }
+        },
+        {
+          "Id": "knob-02",
+          "Label": "Ch 1 FX 1",
+          "Midi": {
+            "Kind": "ControlChange",
+            "Channel": 1,
+            "Number": 2
+          },
+          "Mixer": {
+            "OscAddress": "/ch/01/mix/07/level",
+            "ValueKind": "Level"
+          }
+        },
+        {
+          "Id": "button-01",
+          "Label": "Ch 1 Mute",
+          "Midi": {
+            "Kind": "NoteOn",
+            "Channel": 1,
+            "Number": 34
+          },
+          "Mixer": {
+            "OscAddress": "/ch/01/mix/on",
+            "ValueKind": "Toggle"
+          }
+        }
+      ]
+    }
+  ]
+}

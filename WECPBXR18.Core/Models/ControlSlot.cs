@@ -28,7 +28,7 @@ public sealed class ControlSlot
 
     public string Id { get; }
 
-    public string Label { get; }
+    public string Label { get; private set; }
 
     public ControlKind Kind { get; }
 
@@ -58,6 +58,16 @@ public sealed class ControlSlot
     public void SetMidiBinding(MidiBinding? midiBinding)
     {
         MidiBinding = midiBinding;
+    }
+
+    public void SetLabel(string label)
+    {
+        if (string.IsNullOrWhiteSpace(label))
+        {
+            throw new ArgumentException("Control slot label is required.", nameof(label));
+        }
+
+        Label = label;
     }
 
     public void SetMixerBinding(MixerBinding? mixerBinding)

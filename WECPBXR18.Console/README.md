@@ -204,6 +204,106 @@ bank color 255 0 0
 ```
 
 ```text
+map save [path]
+```
+
+Saves the current MIDI/OSC map to JSON. Default path:
+
+```text
+WECPBXR18.Console/midi-map.json
+```
+
+```text
+map load [path]
+```
+
+Loads MIDI/OSC map from JSON and applies it to the current Core bank set.
+
+```text
+map list
+```
+
+Prints all assignable slots in the current bank with MIDI and mixer bindings.
+
+```text
+map show <slotId>
+```
+
+Prints one slot binding.
+
+Example:
+
+```text
+map show fader-01
+```
+
+```text
+map set label <slotId> <label>
+```
+
+Renames a slot in the current bank.
+
+Example:
+
+```text
+map set label fader-01 Vocal 1
+```
+
+```text
+map set midi <slotId> <cc|note|noteoff|pitch> <channel> <number>
+```
+
+Assigns MIDI input to a slot in the current bank.
+
+Example:
+
+```text
+map set midi fader-01 cc 1 25
+```
+
+```text
+map set osc <slotId> <oscAddress> [level|toggle|pan]
+```
+
+Assigns an exact OSC address.
+
+Example:
+
+```text
+map set osc fader-01 /ch/01/mix/fader level
+```
+
+```text
+map set command <slotId> <main|mute|pan|bus|aux|fx|bus-on|fx-on> <channel> [index]
+```
+
+Assigns a predefined XR18 command.
+
+Examples:
+
+```text
+map set command fader-01 main 1
+map set command knob-01 bus 1 1
+map set command knob-02 aux 1 2
+map set command knob-03 fx 1 1
+map set command button-01 mute 1
+map set command button-02 bus-on 1 1
+```
+
+```text
+map clear midi <slotId>
+map clear osc <slotId>
+```
+
+Clears MIDI or mixer binding.
+
+```text
+map commands
+```
+
+Prints the predefined XR18 command catalog.
+
+```text
 help
 ```
 
@@ -234,5 +334,9 @@ quit   same as exit
 - MIDI input events are printed as raw DryWetMIDI event text. Internally the hardware layer also normalizes Control Change, Note On, Note Off, and Pitch Bend events for future mapping logic.
 - Core currently uses a provisional default MIDI map: knobs and faders are sequential Control Change values, assignable buttons are sequential Note values. Real Worlde mappings should be adjusted after checking `midi connect <index>` logs.
 - Core stores an RGB color per bank. Sending that color to the physical Easycontrol bank buttons is not implemented yet because the controller-specific MIDI/SysEx protocol for button RGB is still unknown.
+- XR18 command catalog currently includes channel main fader, mute, pan, bus/aux send level, FX send level, bus send on/off, and FX send on/off.
+- On XR18/X-Air, AUX outputs are normally fed by bus sends. The `aux` command is therefore an alias for bus sends 1-6.
+- FX send commands currently assume FX sends use send indexes 7-10 (`FX 1` -> `/ch/NN/mix/07/level`). This should be verified on hardware.
+- For buttons, the safest first assignments are `mute`, `bus-on`, and `fx-on`. Later candidates: solo, tap tempo, mute groups, or selected-channel actions, but only after confirming their XR18 OSC addresses and whether the controller buttons behave as momentary or toggle controls.
 - Windows Firewall can block incoming UDP responses. If scanning or live updates do not work, check firewall permissions for the console app.
 - The current scanner is intentionally simple: it searches only local `/24` subnet(s), not arbitrary routed networks.

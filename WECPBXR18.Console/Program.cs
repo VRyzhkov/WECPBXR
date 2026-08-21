@@ -7,7 +7,10 @@ Console.WriteLine();
 
 Xr18NetworkScanner scanner = new();
 using MidiInputManager midi = new();
-MappingEngine mappingEngine = new(DefaultControlBankFactory.CreateDefaultBankSet());
+BankSet bankSet = DefaultControlBankFactory.CreateDefaultBankSet();
+MappingEngine mappingEngine = new(bankSet);
+MidiMapEditor mapEditor = new(bankSet);
+string midiMapPath = Path.Combine("WECPBXR18.Console", "midi-map.json");
 Xr18MixerClient? mixer = null;
 string? connectedMixerAddress = null;
 
@@ -90,6 +93,10 @@ while (true)
 
             case "bank":
                 HandleBankCommand(mappingEngine, parts);
+                break;
+
+            case "map":
+                midiMapPath = await HandleMapCommandAsync(mapEditor, mappingEngine, midiMapPath, parts);
                 break;
 
             case "q":
@@ -371,6 +378,242 @@ static void HandleBankCommand(MappingEngine mappingEngine, string[] parts)
     }
 }
 
+static async Task<string> HandleMapCommandAsync(
+    MidiMapEditor mapEditor,
+    MappingEngine mappingEngine,
+    string currentPath,
+    string[] parts)
+{
+    if (parts.Length < 2)
+    {
+        PrintMapHelp();
+        return currentPath;
+    }
+
+    string command = parts[1].ToLowerInvariant();
+
+    switch (command)
+    {
+        case "save":
+            string savePath = parts.Length >= 3 ? parts[2] : currentPath;
+            await mapEditor.SaveAsync(savePath);
+            Console.WriteLine($"Map saved: {savePath}");
+            return savePath;
+
+        case "load":
+            string loadPath = parts.Length >= 3 ? parts[2] : currentPath;
+            await mapEditor.LoadAsync(loadPath);
+            Console.WriteLine($"Map loaded: {loadPath}");
+            return loadPath;
+
+        case "list":
+            PrintMapSlots(mappingEngine);
+            return currentPath;
+
+        case "show":
+            ShowMapSlot(mapEditor, mappingEngine, parts);
+            return currentPath;
+
+        case "set":
+            SetMapValue(mapEditor, mappingEngine, parts);
+            return currentPath;
+
+        case "clear":
+            ClearMapValue(mapEditor, mappingEngine, parts);
+            return currentPath;
+
+        case "commands":
+            PrintMixerCommandCatalog(mapEditor.CommandCatalog);
+            return currentPath;
+
+        case "path":
+            Console.WriteLine($"Current map path: {currentPath}");
+            return currentPath;
+
+        case "help":
+            PrintMapHelp();
+            return currentPath;
+
+        default:
+            Console.WriteLine($"Unknown map command '{parts[1]}'.");
+            PrintMapHelp();
+            return currentPath;
+    }
+}
+
+static void PrintMapSlots(MappingEngine mappingEngine)
+{
+    Console.WriteLine($"Map slots for bank {mappingEngine.CurrentBank.Index + 1}: {mappingEngine.CurrentBank.Name}");
+
+    foreach (ControlSlot slot in mappingEngine.CurrentBank.Slots)
+    {
+        Console.WriteLine($"{slot.Id}: {slot.Label} midi={FormatMidiBinding(slot.MidiBinding)} mixer={FormatMixerBinding(slot.MixerBinding)}");
+    }
+}
+
+static void ShowMapSlot(MidiMapEditor mapEditor, MappingEngine mappingEngine, string[] parts)
+{
+    if (parts.Length < 3)
+    {
+        throw new ArgumentException("Slot id is required. Example: map show fader-01");
+    }
+
+    ControlSlot slot = mapEditor.GetSlot(mappingEngine.CurrentBank.Index, parts[2]);
+    Console.WriteLine($"{slot.Id}: {slot.Label}");
+    Console.WriteLine($"  MIDI:  {FormatMidiBinding(slot.MidiBinding)}");
+    Console.WriteLine($"  Mixer: {FormatMixerBinding(slot.MixerBinding)}");
+}
+
+static void SetMapValue(MidiMapEditor mapEditor, MappingEngine mappingEngine, string[] parts)
+{
+    if (parts.Length < 4)
+    {
+        throw new ArgumentException("Map set command is incomplete. Type 'map help'.");
+    }
+
+    string target = parts[2].ToLowerInvariant();
+    string slotId = parts[3];
+    int bankIndex = mappingEngine.CurrentBank.Index;
+
+    switch (target)
+    {
+        case "label":
+            if (parts.Length < 5)
+            {
+                throw new ArgumentException("Label is required. Example: map set label fader-01 Vocal 1");
+            }
+
+            mapEditor.SetSlotLabel(bankIndex, slotId, string.Join(' ', parts.Skip(4)));
+            break;
+
+        case "midi":
+            if (parts.Length < 7)
+            {
+                throw new ArgumentException("MIDI binding requires kind, channel and number. Example: map set midi fader-01 cc 1 25");
+            }
+
+            mapEditor.SetMidiBinding(bankIndex, slotId, new MidiBinding(
+                ParseMidiMessageKind(parts[4]),
+                ReadInt(parts[5], "MIDI channel"),
+                ReadInt(parts[6], "MIDI number")));
+            break;
+
+        case "osc":
+            if (parts.Length < 5)
+            {
+                throw new ArgumentException("OSC address is required. Example: map set osc fader-01 /ch/01/mix/fader");
+            }
+
+            mapEditor.SetMixerBinding(bankIndex, slotId, new MixerBinding(parts[4], parts.Length >= 6 ? ParseMixerValueKind(parts[5]) : MixerValueKind.Level));
+            break;
+
+        case "command":
+            if (parts.Length < 6)
+            {
+                throw new ArgumentException("Mixer command requires key and channel. Example: map set command fader-01 main 1");
+            }
+
+            string commandKey = parts[4];
+            int channel = ReadInt(parts[5], "XR18 channel");
+            int? index = parts.Length >= 7 ? ReadInt(parts[6], "command index") : null;
+            mapEditor.AssignMixerCommand(bankIndex, slotId, commandKey, channel, index);
+            break;
+
+        default:
+            throw new ArgumentException($"Unknown map set target '{parts[2]}'.");
+    }
+
+    ControlSlot slot = mapEditor.GetSlot(bankIndex, slotId);
+    Console.WriteLine($"{slot.Id}: {slot.Label} midi={FormatMidiBinding(slot.MidiBinding)} mixer={FormatMixerBinding(slot.MixerBinding)}");
+}
+
+static void ClearMapValue(MidiMapEditor mapEditor, MappingEngine mappingEngine, string[] parts)
+{
+    if (parts.Length < 4)
+    {
+        throw new ArgumentException("Map clear command is incomplete. Example: map clear midi fader-01");
+    }
+
+    string target = parts[2].ToLowerInvariant();
+    string slotId = parts[3];
+    int bankIndex = mappingEngine.CurrentBank.Index;
+
+    switch (target)
+    {
+        case "midi":
+            mapEditor.SetMidiBinding(bankIndex, slotId, null);
+            break;
+
+        case "osc":
+        case "mixer":
+            mapEditor.SetMixerBinding(bankIndex, slotId, null);
+            break;
+
+        default:
+            throw new ArgumentException($"Unknown map clear target '{parts[2]}'.");
+    }
+
+    ControlSlot slot = mapEditor.GetSlot(bankIndex, slotId);
+    Console.WriteLine($"{slot.Id}: {slot.Label} midi={FormatMidiBinding(slot.MidiBinding)} mixer={FormatMixerBinding(slot.MixerBinding)}");
+}
+
+static void PrintMixerCommandCatalog(MixerCommandCatalog commandCatalog)
+{
+    foreach (MixerCommandDefinition command in commandCatalog.Commands.OrderBy(command => command.Key))
+    {
+        string index = command.MinIndex is null ? "none" : $"{command.MinIndex}-{command.MaxIndex}";
+        Console.WriteLine($"{command.Key}: kind={command.ValueKind} index={index} pattern={command.AddressPattern}");
+        Console.WriteLine($"  {command.Description}");
+    }
+}
+
+static MidiMessageKind ParseMidiMessageKind(string value)
+{
+    return value.ToLowerInvariant() switch
+    {
+        "cc" or "controlchange" => MidiMessageKind.ControlChange,
+        "note" or "noteon" => MidiMessageKind.NoteOn,
+        "noteoff" => MidiMessageKind.NoteOff,
+        "pitch" or "pitchbend" => MidiMessageKind.PitchBend,
+        _ => throw new ArgumentException($"Unknown MIDI kind '{value}'.")
+    };
+}
+
+static MixerValueKind ParseMixerValueKind(string value)
+{
+    return value.ToLowerInvariant() switch
+    {
+        "level" => MixerValueKind.Level,
+        "toggle" or "bool" or "button" => MixerValueKind.Toggle,
+        "pan" => MixerValueKind.Pan,
+        _ => throw new ArgumentException($"Unknown mixer value kind '{value}'.")
+    };
+}
+
+static int ReadInt(string value, string name)
+{
+    if (!int.TryParse(value, out int result))
+    {
+        throw new ArgumentException($"'{value}' is not a valid {name}.");
+    }
+
+    return result;
+}
+
+static string FormatMidiBinding(MidiBinding? binding)
+{
+    return binding is null
+        ? "<none>"
+        : $"{binding.Kind} ch={binding.Channel} number={binding.Number}";
+}
+
+static string FormatMixerBinding(MixerBinding? binding)
+{
+    return binding is null
+        ? "<none>"
+        : $"{binding.OscAddress} kind={binding.ValueKind}";
+}
+
 static void PrintBankStatus(MappingEngine mappingEngine)
 {
     PrintCurrentBank("BANK", mappingEngine.CurrentBank);
@@ -580,6 +823,26 @@ static void PrintBankHelp()
     Console.WriteLine();
 }
 
+static void PrintMapHelp()
+{
+    Console.WriteLine();
+    Console.WriteLine("Map commands use the current bank selected by 'bank select'.");
+    Console.WriteLine("  map save [path]");
+    Console.WriteLine("  map load [path]");
+    Console.WriteLine("  map path");
+    Console.WriteLine("  map list");
+    Console.WriteLine("  map show <slotId>");
+    Console.WriteLine("  map set label <slotId> <label>");
+    Console.WriteLine("  map set midi <slotId> <cc|note|noteoff|pitch> <channel> <number>");
+    Console.WriteLine("  map set osc <slotId> <oscAddress> [level|toggle|pan]");
+    Console.WriteLine("  map set command <slotId> <main|mute|pan|bus|aux|fx|bus-on|fx-on> <channel> [index]");
+    Console.WriteLine("  map clear midi <slotId>");
+    Console.WriteLine("  map clear osc <slotId>");
+    Console.WriteLine("  map commands");
+    Console.WriteLine("  map help");
+    Console.WriteLine();
+}
+
 static void PrintHelp()
 {
     Console.WriteLine();
@@ -599,6 +862,7 @@ static void PrintHelp()
     Console.WriteLine("  bank next                Switch to next bank");
     Console.WriteLine("  bank prev                Switch to previous bank");
     Console.WriteLine("  bank status              Show current bank control states");
+    Console.WriteLine("  map help                 Show MIDI/OSC map editor commands");
     Console.WriteLine("  help                     Show commands");
     Console.WriteLine("  exit                     Stop diagnostics");
     Console.WriteLine();
