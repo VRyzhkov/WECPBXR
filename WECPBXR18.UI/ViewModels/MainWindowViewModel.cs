@@ -28,6 +28,12 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
     private string _mixerAddress = "192.168.1.100";
     private string _mixerStatus = "XR18: disconnected";
     private string _midiStatus = "MIDI: disconnected";
+    private bool _isAssignmentMode;
+    private string _selectedAssignmentCommand = "main";
+    private string _assignmentChannel = "1";
+    private string _assignmentIndex = "1";
+    private string _selectedSlotText = "slot: none";
+    private ControlSlotViewModel? _selectedSlot;
     private MidiInputDeviceInfo? _selectedMidiDevice;
     private Xr18MixerClient? _mixer;
     private bool _disposed;
@@ -53,6 +59,15 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         DisconnectMidiCommand = new RelayCommand(DisconnectMidi);
         ConnectMixerCommand = new AsyncRelayCommand(ConnectMixerAsync);
         DisconnectMixerCommand = new AsyncRelayCommand(DisconnectMixerAsync);
+        ToggleAssignmentModeCommand = new RelayCommand(ToggleAssignmentMode);
+        ApplyAssignmentCommand = new RelayCommand(ApplyAssignment);
+        ClearAssignmentCommand = new RelayCommand(ClearAssignment);
+        SaveMapCommand = new RelayCommand(SaveMap);
+
+        foreach (MixerCommandDefinition command in _mapEditor.CommandCatalog.Commands.OrderBy(command => command.Key))
+        {
+            AssignmentCommands.Add(command.Key);
+        }
 
         TryAutoLoadMap();
         RefreshMidiDevices();
@@ -66,6 +81,8 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
     public ObservableCollection<ControlSlotViewModel> Buttons { get; } = new();
 
     public ObservableCollection<MidiInputDeviceInfo> MidiDevices { get; } = new();
+
+    public ObservableCollection<string> AssignmentCommands { get; } = new();
 
     public ICommand LoadMapCommand { get; }
 
@@ -86,6 +103,58 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
     public ICommand ConnectMixerCommand { get; }
 
     public ICommand DisconnectMixerCommand { get; }
+
+    public ICommand ToggleAssignmentModeCommand { get; }
+
+    public ICommand ApplyAssignmentCommand { get; }
+
+    public ICommand ClearAssignmentCommand { get; }
+
+    public ICommand SaveMapCommand { get; }
+
+    public bool IsAssignmentMode
+    {
+        get => _isAssignmentMode;
+        private set
+        {
+            if (SetProperty(ref _isAssignmentMode, value))
+            {
+                OnPropertyChanged(nameof(NormalPanelVisibility));
+                OnPropertyChanged(nameof(AssignmentPanelVisibility));
+                OnPropertyChanged(nameof(AssignmentModeText));
+            }
+        }
+    }
+
+    public Visibility NormalPanelVisibility => IsAssignmentMode ? Visibility.Collapsed : Visibility.Visible;
+
+    public Visibility AssignmentPanelVisibility => IsAssignmentMode ? Visibility.Visible : Visibility.Collapsed;
+
+    public string AssignmentModeText => IsAssignmentMode ? "Assign on" : "Assign";
+
+    public string SelectedAssignmentCommand
+    {
+        get => _selectedAssignmentCommand;
+        set => SetProperty(ref _selectedAssignmentCommand, value);
+    }
+
+    public string AssignmentChannel
+    {
+        get => _assignmentChannel;
+        set => SetProperty(ref _assignmentChannel, value);
+    }
+
+    public string AssignmentIndex
+    {
+        get => _assignmentIndex;
+        set => SetProperty(ref _assignmentIndex, value);
+    }
+
+    public string SelectedSlotText
+    {
+        get => _selectedSlotText;
+        private set => SetProperty(ref _selectedSlotText, value);
+    }
 
     public MidiInputDeviceInfo? SelectedMidiDevice
     {
@@ -166,6 +235,112 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
     {
         TryAutoLoadMap();
         RefreshCurrentBank();
+    }
+
+    private void SaveMap()
+    {
+        try
+        {
+            string path = GetDefaultMidiMapPath();
+            _mapEditor.SaveAsync(path).GetAwaiter().GetResult();
+
+            string sourcePath = GetSourceMidiMapPath();
+            if (File.Exists(sourcePath) && !string.Equals(path, sourcePath, StringComparison.OrdinalIgnoreCase))
+            {
+                _mapEditor.SaveAsync(sourcePath).GetAwaiter().GetResult();
+            }
+
+            Status = "Map saved.";
+        }
+        catch (Exception exception)
+        {
+            Status = $"Map save failed: {exception.Message}";
+        }
+    }
+
+    private void ToggleAssignmentMode()
+    {
+        IsAssignmentMode = !IsAssignmentMode;
+        Status = IsAssignmentMode
+            ? "Assignment mode: click a control, choose command, channel/index, then Set."
+            : "Assignment mode off.";
+    }
+
+    public void SelectSlot(ControlSlotViewModel slot)
+    {
+        _selectedSlot?.SetSelected(false);
+        _selectedSlot = slot;
+        _selectedSlot.SetSelected(true);
+        SelectedSlotText = $"slot: {slot.Id}";
+
+        ControlSlot coreSlot = _mapEditor.GetSlot(_mappingEngine.CurrentBank.Index, slot.Id);
+        LoadAssignmentFields(coreSlot);
+        NormalizeSlotLabel(_mappingEngine.CurrentBank.Index, coreSlot);
+        slot.Update(coreSlot.Snapshot());
+        slot.SetSelected(true);
+
+        Status = coreSlot.MixerBinding is null
+            ? $"Selected {slot.Id}: no OSC binding"
+            : $"Selected {slot.Id}: {coreSlot.MixerBinding.OscAddress}";
+    }
+
+    private void ApplyAssignment()
+    {
+        if (_selectedSlot is null)
+        {
+            Status = "Assignment: click a control first.";
+            return;
+        }
+
+        if (!int.TryParse(AssignmentChannel, out int channel))
+        {
+            Status = "Assignment: channel must be 1-18.";
+            return;
+        }
+
+        int? index = string.IsNullOrWhiteSpace(AssignmentIndex)
+            ? null
+            : int.TryParse(AssignmentIndex, out int parsedIndex)
+                ? parsedIndex
+                : null;
+
+        if (!string.IsNullOrWhiteSpace(AssignmentIndex) && index is null)
+        {
+            Status = "Assignment: index must be a number or empty.";
+            return;
+        }
+
+        try
+        {
+            int bankIndex = _mappingEngine.CurrentBank.Index;
+            _mapEditor.AssignMixerCommand(bankIndex, _selectedSlot.Id, SelectedAssignmentCommand, channel, index);
+            _mapEditor.SetSlotLabel(bankIndex, _selectedSlot.Id, CreateAssignmentLabel(SelectedAssignmentCommand, channel, index));
+            ControlSlot slot = _mapEditor.GetSlot(bankIndex, _selectedSlot.Id);
+            _selectedSlot.Update(slot.Snapshot());
+            _selectedSlot.SetSelected(true);
+            Status = $"Assigned {_selectedSlot.Id}: {slot.MixerBinding?.OscAddress}";
+        }
+        catch (Exception exception)
+        {
+            Status = $"Assignment failed: {exception.Message}";
+        }
+    }
+
+    private void ClearAssignment()
+    {
+        if (_selectedSlot is null)
+        {
+            Status = "Assignment: click a control first.";
+            return;
+        }
+
+        int bankIndex = _mappingEngine.CurrentBank.Index;
+        _mapEditor.SetMixerBinding(bankIndex, _selectedSlot.Id, null);
+        _mapEditor.SetSlotLabel(bankIndex, _selectedSlot.Id, CreateUnassignedLabel(_selectedSlot.Id));
+        ControlSlot slot = _mapEditor.GetSlot(bankIndex, _selectedSlot.Id);
+        _selectedSlot.Update(slot.Snapshot());
+        _selectedSlot.SetSelected(true);
+        Status = $"Cleared {_selectedSlot.Id}.";
     }
 
     private void RefreshMidiDevices()
@@ -273,9 +448,12 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         Knobs.Clear();
         Faders.Clear();
         Buttons.Clear();
+        _selectedSlot = null;
+        SelectedSlotText = "slot: none";
 
         foreach (ControlSlot slot in bank.Slots)
         {
+            NormalizeSlotLabel(bank.Index, slot);
             ControlSlotViewModel viewModel = CreateSlotViewModel(slot.Snapshot());
             _slotLookup[viewModel.Id] = viewModel;
 
@@ -442,6 +620,117 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
             : $"{prefix}: {result.Message}";
     }
 
+    private void LoadAssignmentFields(ControlSlot slot)
+    {
+        if (slot.MixerBinding is null)
+        {
+            AssignmentChannel = "1";
+            AssignmentIndex = string.Empty;
+            Status = "Selected slot has no OSC binding.";
+            return;
+        }
+
+        if (TryResolveAssignment(slot.MixerBinding, out MixerAssignment? assignment) && assignment is not null)
+        {
+            SelectedAssignmentCommand = assignment.CommandKey;
+            AssignmentChannel = assignment.Channel.ToString(CultureInfo.InvariantCulture);
+            AssignmentIndex = assignment.Index?.ToString(CultureInfo.InvariantCulture) ?? string.Empty;
+            return;
+        }
+
+        AssignmentIndex = string.Empty;
+        Status = $"Selected OSC binding is not in the command catalog: {slot.MixerBinding.OscAddress}";
+    }
+
+    private void NormalizeSlotLabel(int bankIndex, ControlSlot slot)
+    {
+        if (slot.MixerBinding is null)
+        {
+            return;
+        }
+
+        if (!TryResolveAssignment(slot.MixerBinding, out MixerAssignment? assignment) || assignment is null)
+        {
+            return;
+        }
+
+        string label = CreateAssignmentLabel(assignment.CommandKey, assignment.Channel, assignment.Index);
+
+        if (!string.Equals(slot.Label, label, StringComparison.Ordinal))
+        {
+            _mapEditor.SetSlotLabel(bankIndex, slot.Id, label);
+        }
+    }
+
+    private bool TryResolveAssignment(MixerBinding binding, out MixerAssignment? assignment)
+    {
+        foreach (MixerCommandDefinition command in _mapEditor.CommandCatalog.Commands.OrderBy(command => command.Key))
+        {
+            foreach (int channel in Enumerable.Range(1, 18))
+            {
+                IEnumerable<int?> indexes = GetCandidateIndexes(command);
+
+                foreach (int? index in indexes)
+                {
+                    MixerBinding candidate;
+
+                    try
+                    {
+                        candidate = _mapEditor.CommandCatalog.CreateBinding(command.Key, channel, index);
+                    }
+                    catch
+                    {
+                        continue;
+                    }
+
+                    if (candidate.ValueKind == binding.ValueKind &&
+                        string.Equals(candidate.OscAddress, binding.OscAddress, StringComparison.OrdinalIgnoreCase))
+                    {
+                        assignment = new MixerAssignment(command.Key, channel, index);
+                        return true;
+                    }
+                }
+            }
+        }
+
+        assignment = null;
+        return false;
+    }
+
+    private static IEnumerable<int?> GetCandidateIndexes(MixerCommandDefinition command)
+    {
+        if (command.MinIndex is null || command.MaxIndex is null)
+        {
+            yield return null;
+            yield break;
+        }
+
+        for (int index = command.MinIndex.Value; index <= command.MaxIndex.Value; index++)
+        {
+            yield return index;
+        }
+    }
+
+    private static string CreateAssignmentLabel(string commandKey, int channel, int? index)
+    {
+        return commandKey.ToLowerInvariant() switch
+        {
+            "main" => $"Ch {channel} Level",
+            "mute" => $"Ch {channel} Mute",
+            "pan" => $"Ch {channel} Pan",
+            "bus" or "aux" => $"Ch {channel} Bus {index}",
+            "fx" => $"Ch {channel} FX {index}",
+            "bus-on" => $"Ch {channel} Bus {index} On",
+            "fx-on" => $"Ch {channel} FX {index} On",
+            _ => $"Ch {channel} {commandKey}"
+        };
+    }
+
+    private static string CreateUnassignedLabel(string slotId)
+    {
+        return $"Unassigned {slotId}";
+    }
+
     private static ControllerInputChange ToControllerInputChange(MidiControlChange change)
     {
         return new ControllerInputChange(
@@ -522,6 +811,11 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         return File.Exists(sourcePath) ? sourcePath : outputPath;
     }
 
+    private static string GetSourceMidiMapPath()
+    {
+        return Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "midi-map.json"));
+    }
+
     private static Brush GetReadableTextBrush(RgbColor color)
     {
         double luminance = (0.299 * color.Red) + (0.587 * color.Green) + (0.114 * color.Blue);
@@ -553,3 +847,5 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         _disposed = true;
     }
 }
+
+public sealed record MixerAssignment(string CommandKey, int Channel, int? Index);

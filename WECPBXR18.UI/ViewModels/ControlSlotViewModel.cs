@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Windows;
 using System.Windows.Media;
 using WECPBXR18.Core.Models;
 
@@ -7,6 +8,7 @@ namespace WECPBXR18.UI.ViewModels;
 public sealed class ControlSlotViewModel : ObservableObject
 {
     private ControlSlotSnapshot _snapshot;
+    private bool _isSelected;
 
     public ControlSlotViewModel(ControlSlotSnapshot snapshot, double left, double top, double width, double height)
     {
@@ -49,10 +51,32 @@ public sealed class ControlSlotViewModel : ObservableObject
 
     public Brush StateBrush => _snapshot.IsLocked ? Brushes.DarkOrange : Brushes.LimeGreen;
 
+    public bool IsSelected
+    {
+        get => _isSelected;
+        private set
+        {
+            if (SetProperty(ref _isSelected, value))
+            {
+                OnPropertyChanged(nameof(SelectionBorderBrush));
+                OnPropertyChanged(nameof(SelectionBorderThickness));
+            }
+        }
+    }
+
+    public Brush SelectionBorderBrush => IsSelected ? Brushes.White : Brushes.Transparent;
+
+    public Thickness SelectionBorderThickness => IsSelected ? new Thickness(2) : new Thickness(0);
+
     public void Update(ControlSlotSnapshot snapshot)
     {
         _snapshot = snapshot;
         OnPropertyChanged(string.Empty);
+    }
+
+    public void SetSelected(bool isSelected)
+    {
+        IsSelected = isSelected;
     }
 
     private double ToBarWidth(double? value)

@@ -41,6 +41,20 @@ public partial class MainWindow : Window
         Close();
     }
 
+    private void ControlSlot_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    {
+        if (!_viewModel.IsAssignmentMode)
+        {
+            return;
+        }
+
+        if (sender is FrameworkElement { DataContext: ControlSlotViewModel slot })
+        {
+            _viewModel.SelectSlot(slot);
+            e.Handled = true;
+        }
+    }
+
     protected override void OnClosed(EventArgs e)
     {
         _viewModel.Dispose();

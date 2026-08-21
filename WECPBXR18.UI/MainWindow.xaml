@@ -101,7 +101,7 @@
         </DataTemplate>
 
         <DataTemplate x:Key="KnobTemplate" DataType="{x:Type vm:ControlSlotViewModel}">
-            <Grid ToolTip="{Binding BindingText}">
+            <Grid ToolTip="{Binding BindingText}" PreviewMouseLeftButtonDown="ControlSlot_PreviewMouseLeftButtonDown">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="18" />
                     <RowDefinition Height="52" />
@@ -139,11 +139,16 @@
                     <TextBlock Text="{Binding ControllerText}" Foreground="#9FCBFF" FontSize="8" Margin="0,0,5,0" />
                     <TextBlock Text="{Binding MixerText}" Foreground="#FFE08A" FontSize="8" />
                 </StackPanel>
+                <Border Grid.RowSpan="4"
+                        BorderBrush="{Binding SelectionBorderBrush}"
+                        BorderThickness="{Binding SelectionBorderThickness}"
+                        CornerRadius="6"
+                        IsHitTestVisible="False" />
             </Grid>
         </DataTemplate>
 
         <DataTemplate x:Key="ButtonTemplate" DataType="{x:Type vm:ControlSlotViewModel}">
-            <Grid ToolTip="{Binding BindingText}">
+            <Grid ToolTip="{Binding BindingText}" PreviewMouseLeftButtonDown="ControlSlot_PreviewMouseLeftButtonDown">
                 <Border Background="#C2CAD4"
                         BorderBrush="#050609"
                         BorderThickness="3"
@@ -168,11 +173,15 @@
                         </StackPanel>
                     </Grid>
                 </Border>
+                <Border BorderBrush="{Binding SelectionBorderBrush}"
+                        BorderThickness="{Binding SelectionBorderThickness}"
+                        CornerRadius="5"
+                        IsHitTestVisible="False" />
             </Grid>
         </DataTemplate>
 
         <DataTemplate x:Key="FaderTemplate" DataType="{x:Type vm:ControlSlotViewModel}">
-            <Grid ToolTip="{Binding BindingText}">
+            <Grid ToolTip="{Binding BindingText}" PreviewMouseLeftButtonDown="ControlSlot_PreviewMouseLeftButtonDown">
                 <Grid.RowDefinitions>
                     <RowDefinition Height="22" />
                     <RowDefinition Height="102" />
@@ -228,6 +237,11 @@
                     <TextBlock Text="{Binding ControllerText}" Foreground="#9FCBFF" FontSize="9" TextAlignment="Center" />
                     <TextBlock Text="{Binding MixerText}" Foreground="#FFE08A" FontSize="9" TextAlignment="Center" />
                 </StackPanel>
+                <Border Grid.RowSpan="4"
+                        BorderBrush="{Binding SelectionBorderBrush}"
+                        BorderThickness="{Binding SelectionBorderThickness}"
+                        CornerRadius="6"
+                        IsHitTestVisible="False" />
             </Grid>
         </DataTemplate>
     </Window.Resources>
@@ -293,23 +307,51 @@
             <Button Canvas.Left="82" Canvas.Top="320" Content="SOLO" Style="{StaticResource ControllerButtonStyle}" />
             <Button Canvas.Left="82" Canvas.Top="382" Content="SEND ALL" Style="{StaticResource ControllerButtonStyle}" />
 
-            <StackPanel Canvas.Left="82" Canvas.Top="674" Orientation="Horizontal">
+            <StackPanel Canvas.Left="82" Canvas.Top="674" Orientation="Horizontal" Visibility="{Binding NormalPanelVisibility}">
                 <TextBox Text="{Binding MixerAddress, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                          ToolTip="{Binding MixerStatus}"
                          Style="{StaticResource PanelTextBoxStyle}" />
-                <Button Content="X+" Command="{Binding ConnectMixerCommand}" ToolTip="{Binding MixerStatus}" Style="{StaticResource PanelButtonStyle}" Margin="0,0,6,0" />
-                <Button Content="X-" Command="{Binding DisconnectMixerCommand}" ToolTip="{Binding MixerStatus}" Style="{StaticResource PanelButtonStyle}" Margin="0,0,10,0" />
+                <Button Content="X+" Command="{Binding ConnectMixerCommand}" ToolTip="Connect to XR18" Style="{StaticResource PanelButtonStyle}" Margin="0,0,6,0" />
+                <Button Content="X-" Command="{Binding DisconnectMixerCommand}" ToolTip="Disconnect from XR18" Style="{StaticResource PanelButtonStyle}" Margin="0,0,10,0" />
                 <ComboBox ItemsSource="{Binding MidiDevices}"
                           SelectedItem="{Binding SelectedMidiDevice, Mode=TwoWay}"
                           DisplayMemberPath="Name"
                           ToolTip="{Binding MidiStatus}"
                           Style="{StaticResource PanelComboBoxStyle}" />
-                <Button Content="R" Command="{Binding RefreshMidiDevicesCommand}" ToolTip="{Binding MidiStatus}" Style="{StaticResource PanelButtonStyle}" Margin="0,0,6,0" />
-                <Button Content="M+" Command="{Binding ConnectMidiCommand}" ToolTip="{Binding MidiStatus}" Style="{StaticResource PanelButtonStyle}" Margin="0,0,6,0" />
-                <Button Content="M-" Command="{Binding DisconnectMidiCommand}" ToolTip="{Binding MidiStatus}" Style="{StaticResource PanelButtonStyle}" Margin="0,0,10,0" />
-                <Button Content="Map" Command="{Binding LoadMapCommand}" Style="{StaticResource PanelButtonStyle}" Margin="0,0,6,0" />
-                <Button Content="SF" Command="{Binding SimulateFaderCommand}" Style="{StaticResource PanelButtonStyle}" Margin="0,0,6,0" />
-                <Button Content="SM" Command="{Binding SimulateMuteCommand}" Style="{StaticResource PanelButtonStyle}" />
+                <Button Content="R" Command="{Binding RefreshMidiDevicesCommand}" ToolTip="Refresh MIDI device list" Style="{StaticResource PanelButtonStyle}" Margin="0,0,6,0" />
+                <Button Content="M+" Command="{Binding ConnectMidiCommand}" ToolTip="Connect selected MIDI input" Style="{StaticResource PanelButtonStyle}" Margin="0,0,6,0" />
+                <Button Content="M-" Command="{Binding DisconnectMidiCommand}" ToolTip="Disconnect MIDI input" Style="{StaticResource PanelButtonStyle}" Margin="0,0,10,0" />
+                <Button Content="Map" Command="{Binding LoadMapCommand}" ToolTip="Load MIDI/OSC map from midi-map.json" Style="{StaticResource PanelButtonStyle}" Margin="0,0,6,0" />
+                <Button Content="Assign" Command="{Binding ToggleAssignmentModeCommand}" ToolTip="Open function assignment mode" Style="{StaticResource PanelButtonStyle}" Margin="0,0,6,0" />
+                <Button Content="SF" Command="{Binding SimulateFaderCommand}" ToolTip="Simulate channel 1 fader movement" Style="{StaticResource PanelButtonStyle}" Margin="0,0,6,0" />
+                <Button Content="SM" Command="{Binding SimulateMuteCommand}" ToolTip="Simulate channel 1 mute button press" Style="{StaticResource PanelButtonStyle}" />
+            </StackPanel>
+
+            <StackPanel Canvas.Left="82" Canvas.Top="674" Orientation="Horizontal" Visibility="{Binding AssignmentPanelVisibility}">
+                <Button Content="{Binding AssignmentModeText}" Command="{Binding ToggleAssignmentModeCommand}" ToolTip="Close function assignment mode" Style="{StaticResource PanelButtonStyle}" Margin="0,0,8,0" />
+                <TextBlock Text="{Binding SelectedSlotText}"
+                           Width="78"
+                           Foreground="#EAF0F7"
+                           FontSize="10"
+                           FontWeight="SemiBold"
+                           VerticalAlignment="Center"
+                           TextTrimming="CharacterEllipsis"
+                           Margin="0,0,8,0" />
+                <ComboBox ItemsSource="{Binding AssignmentCommands}"
+                          SelectedItem="{Binding SelectedAssignmentCommand, Mode=TwoWay}"
+                          Style="{StaticResource PanelComboBoxStyle}"
+                          Width="86" />
+                <TextBox Text="{Binding AssignmentChannel, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                         ToolTip="XR18 channel 1-18"
+                         Style="{StaticResource PanelTextBoxStyle}"
+                         Width="34" />
+                <TextBox Text="{Binding AssignmentIndex, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                         ToolTip="Bus/FX index. Empty for main, mute, pan."
+                         Style="{StaticResource PanelTextBoxStyle}"
+                         Width="34" />
+                <Button Content="Set" Command="{Binding ApplyAssignmentCommand}" ToolTip="Assign selected function to selected control" Style="{StaticResource PanelButtonStyle}" Margin="0,0,6,0" />
+                <Button Content="Clear" Command="{Binding ClearAssignmentCommand}" ToolTip="Clear mixer function from selected control" Style="{StaticResource PanelButtonStyle}" Margin="0,0,6,0" />
+                <Button Content="Save" Command="{Binding SaveMapCommand}" ToolTip="Save current MIDI/OSC map to midi-map.json" Style="{StaticResource PanelButtonStyle}" />
             </StackPanel>
 
             <ItemsControl ItemsSource="{Binding Knobs}" ItemTemplate="{StaticResource KnobTemplate}">
