@@ -34,6 +34,7 @@ midi.ControlChanged += (_, eventArgs) =>
     }
 };
 
+await TryLoadDefaultMapAsync(mapEditor, midiMapPath);
 PrintHelp();
 
 while (true)
@@ -143,6 +144,22 @@ static string GetDefaultMidiMapPath()
     string sourcePath = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "midi-map.json"));
 
     return File.Exists(sourcePath) ? sourcePath : outputPath;
+}
+
+static async Task TryLoadDefaultMapAsync(MidiMapEditor mapEditor, string path)
+{
+    try
+    {
+        await mapEditor.LoadAsync(path);
+        Console.WriteLine($"Map loaded: {path}");
+        Console.WriteLine();
+    }
+    catch (Exception exception)
+    {
+        Console.WriteLine($"Map was not loaded: {exception.Message}");
+        Console.WriteLine("Using built-in default bank map.");
+        Console.WriteLine();
+    }
 }
 
 static async Task<string> GetMixerAddressAsync(Xr18NetworkScanner scanner, string? addressFromCommand)

@@ -10,13 +10,9 @@ From the repository root:
 dotnet run --project WECPBXR18.Console
 ```
 
-The app starts without connecting to XR18 or MIDI devices and prints the command list.
+The app starts without connecting to XR18 or MIDI devices. It automatically tries to load the default MIDI/OSC map and then prints the command list.
 
-To apply the default MIDI/OSC map, run:
-
-```text
-map load
-```
+To reload the default MIDI/OSC map manually, run `map load`.
 
 ## Mixer Connection
 
@@ -239,7 +235,7 @@ map load [path]
 
 Loads MIDI/OSC map from JSON and applies it to the current Core bank set.
 
-Without a path, loads `midi-map.json` from the application output directory. During development, if the file was not copied to output, the app falls back to the project file:
+Without a path, loads the current default map path. On startup, the default path is `midi-map.json` from the application output directory. During development, if the file was not copied to output, the app falls back to the project file:
 
 ```text
 WECPBXR18.Console/midi-map.json
