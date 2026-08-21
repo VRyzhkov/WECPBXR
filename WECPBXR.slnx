@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="WECPBXR.Console/WECPBXR.Console.csproj" />
+  <Project Path="WECPBXR.Core/WECPBXR.Core.csproj" />
+  <Project Path="WECPBXR.Hardware/WECPBXR.Hardware.csproj" />
+  <Project Path="WECPBXR.UI/WECPBXR.UI.csproj" />
+</Solution>
