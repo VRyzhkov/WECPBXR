@@ -99,6 +99,10 @@ while (true)
                 midiMapPath = await HandleMapCommandAsync(mapEditor, mappingEngine, midiMapPath, parts);
                 break;
 
+            case "sim":
+                HandleSimCommand(mappingEngine, parts);
+                break;
+
             case "q":
             case "quit":
             case "exit":
@@ -585,6 +589,103 @@ static void PrintMixerCommandCatalog(MixerCommandCatalog commandCatalog)
     }
 }
 
+static void HandleSimCommand(MappingEngine mappingEngine, string[] parts)
+{
+    if (parts.Length < 2)
+    {
+        PrintSimHelp();
+        return;
+    }
+
+    string command = parts[1].ToLowerInvariant();
+
+    switch (command)
+    {
+        case "midi":
+            SimulateMidi(mappingEngine, parts);
+            break;
+
+        case "mixer":
+            SimulateMixer(mappingEngine, parts);
+            break;
+
+        case "help":
+            PrintSimHelp();
+            break;
+
+        default:
+            Console.WriteLine($"Unknown sim command '{parts[1]}'.");
+            PrintSimHelp();
+            break;
+    }
+}
+
+static void SimulateMidi(MappingEngine mappingEngine, string[] parts)
+{
+    if (parts.Length < 6)
+    {
+        throw new ArgumentException("MIDI simulation requires kind, channel, number and value. Example: sim midi cc 1 26 80");
+    }
+
+    MidiMessageKind kind = ParseMidiMessageKind(parts[2]);
+    int channel = ReadInt(parts[3], "MIDI channel");
+    int number = ReadInt(parts[4], "MIDI number");
+    int rawValue = ReadInt(parts[5], "MIDI value");
+
+    if (rawValue is < 0 or > 127)
+    {
+        throw new ArgumentOutOfRangeException(nameof(rawValue), "MIDI value must be in range 0-127.");
+    }
+
+    MappingResult result = mappingEngine.HandleControllerChange(new ControllerInputChange(
+        kind,
+        channel,
+        number,
+        rawValue / 127.0,
+        $"sim midi {kind} ch={channel} number={number} value={rawValue}"));
+
+    PrintMappingResult("SIM MIDI", result);
+}
+
+static void SimulateMixer(MappingEngine mappingEngine, string[] parts)
+{
+    if (parts.Length < 4)
+    {
+        throw new ArgumentException("Mixer simulation requires OSC address and value. Example: sim mixer /ch/01/mix/fader 0.75");
+    }
+
+    string oscAddress = parts[2];
+    double value = ReadDouble(parts[3], "mixer value");
+
+    MappingResult result = mappingEngine.HandleMixerChange(new MixerValueChange(oscAddress, value));
+
+    PrintMappingResult("SIM MIXER", result);
+}
+
+static void PrintMappingResult(string prefix, MappingResult result)
+{
+    if (result.Slot is not null)
+    {
+        PrintSlotState(prefix, result.Slot);
+        return;
+    }
+
+    if (result.Message is not null)
+    {
+        Console.WriteLine($"{prefix} {result.Message}");
+    }
+}
+
+static double ReadDouble(string value, string name)
+{
+    if (!double.TryParse(value, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out double result))
+    {
+        throw new ArgumentException($"'{value}' is not a valid {name}.");
+    }
+
+    return result;
+}
+
 static MidiMessageKind ParseMidiMessageKind(string value)
 {
     return value.ToLowerInvariant() switch
@@ -916,6 +1017,21 @@ static void PrintMapHelp()
     Console.WriteLine();
 }
 
+static void PrintSimHelp()
+{
+    Console.WriteLine();
+    Console.WriteLine("Simulation commands:");
+    Console.WriteLine("  sim midi <cc|note|noteoff|pitch> <channel> <number> <0-127>");
+    Console.WriteLine("  sim mixer <oscAddress> <0.0-1.0>");
+    Console.WriteLine("  sim help");
+    Console.WriteLine();
+    Console.WriteLine("Examples:");
+    Console.WriteLine("  sim midi cc 1 26 80");
+    Console.WriteLine("  sim midi note 1 34 127");
+    Console.WriteLine("  sim mixer /ch/01/mix/fader 0.75");
+    Console.WriteLine();
+}
+
 static void PrintHelp()
 {
     Console.WriteLine();
@@ -938,6 +1054,7 @@ static void PrintHelp()
     Console.WriteLine("  bank layout              Show current bank physical layout");
     Console.WriteLine("  map load                 Load default MIDI/OSC map JSON");
     Console.WriteLine("  map help                 Show MIDI/OSC map editor commands");
+    Console.WriteLine("  sim help                 Show simulation commands");
     Console.WriteLine("  help                     Show commands");
     Console.WriteLine("  exit                     Stop diagnostics");
     Console.WriteLine();

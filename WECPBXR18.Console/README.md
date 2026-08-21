@@ -330,6 +330,40 @@ map commands
 Prints the predefined XR18 command catalog.
 
 ```text
+sim midi <cc|note|noteoff|pitch> <channel> <number> <0-127>
+```
+
+Simulates an incoming MIDI event and passes it through Core mapping.
+
+Examples:
+
+```text
+sim midi cc 1 26 80
+sim midi note 1 34 127
+```
+
+```text
+sim mixer <oscAddress> <0.0-1.0>
+```
+
+Simulates an incoming mixer OSC value and passes it through Core mapping.
+
+Example:
+
+```text
+sim mixer /ch/01/mix/fader 0.75
+```
+
+Useful no-hardware check:
+
+```text
+map load
+sim mixer /ch/01/mix/fader 0.62
+sim midi cc 1 26 80
+bank layout
+```
+
+```text
 help
 ```
 
@@ -360,6 +394,7 @@ quit   same as exit
 - MIDI input events are printed as raw DryWetMIDI event text. Internally the hardware layer also normalizes Control Change, Note On, Note Off, and Pitch Bend events for future mapping logic.
 - Core currently uses a provisional default MIDI map: knobs and faders are sequential Control Change values, assignable buttons are sequential Note values. Real Worlde mappings should be adjusted after checking `midi connect <index>` logs.
 - Core stores an RGB color per bank. Sending that color to the physical Easycontrol bank buttons is not implemented yet because the controller-specific MIDI/SysEx protocol for button RGB is still unknown.
+- `sim` commands do not send anything to XR18 or a MIDI device. They only exercise Core mapping state inside the console app.
 - XR18 command catalog currently includes channel main fader, mute, pan, bus/aux send level, FX send level, bus send on/off, and FX send on/off.
 - On XR18/X-Air, AUX outputs are normally fed by bus sends. The `aux` command is therefore an alias for bus sends 1-6.
 - FX send commands currently assume FX sends use send indexes 7-10 (`FX 1` -> `/ch/NN/mix/07/level`). This should be verified on hardware.
