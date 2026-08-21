@@ -9,6 +9,7 @@ using Rug.Osc;
 using WECPBXR18.Core.Mapping;
 using WECPBXR18.Core.Models;
 using WECPBXR18.Hardware;
+using WECPBXR18.UI.Settings;
 
 namespace WECPBXR18.UI.ViewModels;
 
@@ -21,6 +22,8 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
     private readonly MappingEngine _mappingEngine;
     private readonly MidiMapEditor _mapEditor;
     private readonly MidiInputManager _midi;
+    private readonly ApplicationSettingsStore _settingsStore;
+    private readonly ApplicationSettings _settings;
     private readonly Dictionary<string, ControlSlotViewModel> _slotLookup = new(StringComparer.OrdinalIgnoreCase);
     private readonly object _mappingLock = new();
 
@@ -54,6 +57,13 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         _mappingEngine = new MappingEngine(_bankSet);
         _mapEditor = new MidiMapEditor(_bankSet);
         _midi = new MidiInputManager();
+        _settingsStore = new ApplicationSettingsStore();
+        _settings = _settingsStore.Load();
+
+        if (!string.IsNullOrWhiteSpace(_settings.XR18.Address))
+        {
+            _mixerAddress = _settings.XR18.Address;
+        }
 
         _mappingEngine.BankChanged += (_, _) => RefreshCurrentBank();
         _mappingEngine.SlotStateChanged += (_, eventArgs) => RunOnUiThread(() => UpdateSlot(eventArgs.Slot));
@@ -86,6 +96,7 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         TryAutoLoadMap();
         RefreshMidiDevices();
         RefreshCurrentBank();
+        _ = AutoConnectAsync();
     }
 
     public ObservableCollection<ControlSlotViewModel> Knobs { get; } = new();
@@ -283,9 +294,24 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         private set => SetProperty(ref _status, value);
     }
 
+    private async Task AutoConnectAsync()
+    {
+        await Task.Yield();
+
+        if (_settings.MIDI.AutoConnect)
+        {
+            ConnectMidi();
+        }
+
+        if (_settings.XR18.AutoConnect)
+        {
+            await ConnectMixerAsync().ConfigureAwait(true);
+        }
+    }
+
     private void TryAutoLoadMap()
     {
-        string path = GetDefaultMidiMapPath();
+        string path = GetConfiguredMidiMapPath();
 
         if (!File.Exists(path))
         {
@@ -315,10 +341,10 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
     {
         try
         {
-            string path = GetDefaultMidiMapPath();
+            string path = GetConfiguredMidiMapPath();
             _mapEditor.SaveAsync(path).GetAwaiter().GetResult();
 
-            string sourcePath = GetSourceMidiMapPath();
+            string sourcePath = GetConfiguredSourceMidiMapPath();
             if (File.Exists(sourcePath) && !string.Equals(path, sourcePath, StringComparison.OrdinalIgnoreCase))
             {
                 _mapEditor.SaveAsync(sourcePath).GetAwaiter().GetResult();
@@ -527,6 +553,11 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         try
         {
             string? selectedName = SelectedMidiDevice?.Name;
+            if (string.IsNullOrWhiteSpace(selectedName))
+            {
+                selectedName = _settings.MIDI.InputDeviceName;
+            }
+
             MidiDevices.Clear();
 
             foreach (MidiInputDeviceInfo device in _midi.GetInputDevices())
@@ -563,6 +594,8 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
             _midi.ConnectByIndex(SelectedMidiDevice.Index);
             MidiStatus = $"MIDI: connected {SelectedMidiDevice.Name}";
             MidiIndicatorBrush = Brushes.LimeGreen;
+            _settings.MIDI.InputDeviceName = SelectedMidiDevice.Name;
+            SaveSettings();
             AddLog(MidiStatus);
         }
         catch (Exception exception)
@@ -605,7 +638,14 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
             _mixer = mixer;
             MixerStatus = $"XR18: connected {MixerAddress.Trim()}";
             MixerIndicatorBrush = Brushes.LimeGreen;
+            _settings.XR18.Address = MixerAddress.Trim();
+            SaveSettings();
             AddLog(MixerStatus);
+
+            if (_settings.XR18.PullOnConnect)
+            {
+                await RequestMixerValuesAsync().ConfigureAwait(true);
+            }
         }
         catch (Exception exception)
         {
@@ -1023,6 +1063,45 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         }
     }
 
+    private string GetConfiguredMidiMapPath()
+    {
+        string configuredPath = _settings.Map.Path;
+        if (string.IsNullOrWhiteSpace(configuredPath))
+        {
+            return GetDefaultMidiMapPath();
+        }
+
+        if (Path.IsPathRooted(configuredPath))
+        {
+            return configuredPath;
+        }
+
+        string outputPath = Path.Combine(AppContext.BaseDirectory, configuredPath);
+        if (File.Exists(outputPath))
+        {
+            return outputPath;
+        }
+
+        string sourcePath = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", configuredPath));
+        return File.Exists(sourcePath) ? sourcePath : outputPath;
+    }
+
+    private string GetConfiguredSourceMidiMapPath()
+    {
+        string configuredPath = _settings.Map.Path;
+        if (string.IsNullOrWhiteSpace(configuredPath))
+        {
+            return GetSourceMidiMapPath();
+        }
+
+        if (Path.IsPathRooted(configuredPath))
+        {
+            return configuredPath;
+        }
+
+        return Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", configuredPath));
+    }
+
     private static string GetDefaultMidiMapPath()
     {
         string outputPath = Path.Combine(AppContext.BaseDirectory, "midi-map.json");
@@ -1076,6 +1155,18 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
     {
         Status = message;
         AddLog(message);
+    }
+
+    private void SaveSettings()
+    {
+        try
+        {
+            _settingsStore.Save(_settings);
+        }
+        catch (Exception exception)
+        {
+            AddLog($"Settings save failed: {exception.Message}");
+        }
     }
 
     private void AddLog(string message)
