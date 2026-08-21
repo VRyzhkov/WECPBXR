@@ -97,6 +97,25 @@ public sealed class Xr18MixerClient : IAsyncDisposable, IDisposable
         return SetChannelMuteAsync(channel, muted: false, cancellationToken);
     }
 
+    public Task SendOscValueAsync(
+        string oscAddress,
+        double value,
+        bool sendInteger = false,
+        CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        if (string.IsNullOrWhiteSpace(oscAddress))
+        {
+            throw new ArgumentException("OSC address is required.", nameof(oscAddress));
+        }
+
+        object oscValue = sendInteger ? (int)Math.Round(value) : (float)value;
+        SendMessage(new OscMessage(oscAddress, oscValue));
+
+        return Task.CompletedTask;
+    }
+
     public async ValueTask DisposeAsync()
     {
         if (_disposed)

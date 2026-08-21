@@ -359,6 +359,23 @@ sim midi cc 1 26 80
 bank layout
 ```
 
+Mute buttons use `ToggleByPress` behavior by default for `Toggle` mixer bindings:
+
+- press events toggle the current mixer value;
+- release events are ignored;
+- XR18 `/ch/NN/mix/on` is inverted from the word "mute": `1` means channel on, `0` means muted.
+
+No-hardware mute check:
+
+```text
+map load
+sim mixer /ch/01/mix/on 1
+sim midi note 1 34 127
+bank layout
+```
+
+The simulated button press should produce an OSC-ready command with value `0`.
+
 ```text
 help
 ```

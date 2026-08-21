@@ -20,17 +20,17 @@ mappingEngine.BankChanged += (_, eventArgs) =>
     Console.WriteLine("BANK physical bank button color command is not implemented yet; protocol is unknown.");
 };
 
-midi.ControlChanged += (_, eventArgs) =>
+midi.ControlChanged += async (_, eventArgs) =>
 {
-    MappingResult result = mappingEngine.HandleControllerChange(ToControllerInputChange(eventArgs.Change));
-
-    if (result.Slot is not null)
+    try
     {
-        PrintSlotState("CORE", result.Slot);
+        MappingResult result = mappingEngine.HandleControllerChange(ToControllerInputChange(eventArgs.Change));
+        PrintMappingResult("CORE", result);
+        await SendMixerCommandIfConnectedAsync(mixer, result.MixerCommand);
     }
-    else if (result.Message is not null)
+    catch (Exception exception)
     {
-        Console.WriteLine($"CORE {result.Message}");
+        Console.Error.WriteLine($"MIDI mapping error: {exception.Message}");
     }
 };
 
@@ -684,13 +684,35 @@ static void PrintMappingResult(string prefix, MappingResult result)
     if (result.Slot is not null)
     {
         PrintSlotState(prefix, result.Slot);
-        return;
     }
 
     if (result.Message is not null)
     {
         Console.WriteLine($"{prefix} {result.Message}");
     }
+
+    if (result.MixerCommand is not null)
+    {
+        PrintMixerOutputCommand(prefix, result.MixerCommand);
+    }
+}
+
+static async Task SendMixerCommandIfConnectedAsync(Xr18MixerClient? mixer, MixerOutputCommand? command)
+{
+    if (mixer is null || command is null)
+    {
+        return;
+    }
+
+    await mixer.SendOscValueAsync(
+        command.OscAddress,
+        command.Value,
+        sendInteger: command.ValueKind == MixerValueKind.Toggle);
+}
+
+static void PrintMixerOutputCommand(string prefix, MixerOutputCommand command)
+{
+    Console.WriteLine($"{prefix} OSC ready: {command.OscAddress} {command.Value:0.###} kind={command.ValueKind}");
 }
 
 static double ReadDouble(string value, string name)
