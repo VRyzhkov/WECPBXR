@@ -1,6 +1,7 @@
 using System.Collections.ObjectModel;
 using System.Globalization;
 using System.IO;
+using System.Reflection;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -13,6 +14,9 @@ namespace WECPBXR18.UI.ViewModels;
 
 public sealed class MainWindowViewModel : ObservableObject, IDisposable
 {
+    private const int WorkSurfaceOffsetY = 46;
+    private const int LowerBlockOffsetY = 64;
+
     private readonly BankSet _bankSet;
     private readonly MappingEngine _mappingEngine;
     private readonly MidiMapEditor _mapEditor;
@@ -29,10 +33,16 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
     private string _mixerStatus = "XR18: disconnected";
     private string _midiStatus = "MIDI: disconnected";
     private bool _isAssignmentMode;
+    private bool _isLearningMidi;
+    private bool _isLogVisible;
+    private bool _isMapDirty;
     private string _selectedAssignmentCommand = "main";
     private string _assignmentChannel = "1";
     private string _assignmentIndex = "1";
     private string _selectedSlotText = "slot: none";
+    private string _saveMapText = "Save";
+    private Brush _mixerIndicatorBrush = Brushes.DimGray;
+    private Brush _midiIndicatorBrush = Brushes.DimGray;
     private ControlSlotViewModel? _selectedSlot;
     private MidiInputDeviceInfo? _selectedMidiDevice;
     private Xr18MixerClient? _mixer;
@@ -63,6 +73,10 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         ApplyAssignmentCommand = new RelayCommand(ApplyAssignment);
         ClearAssignmentCommand = new RelayCommand(ClearAssignment);
         SaveMapCommand = new RelayCommand(SaveMap);
+        ToggleLogCommand = new RelayCommand(ToggleLog);
+        LearnMidiCommand = new RelayCommand(StartLearnMidi);
+        CheckMapCommand = new RelayCommand(CheckMap);
+        RequestMixerValuesCommand = new AsyncRelayCommand(RequestMixerValuesAsync);
 
         foreach (MixerCommandDefinition command in _mapEditor.CommandCatalog.Commands.OrderBy(command => command.Key))
         {
@@ -83,6 +97,8 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
     public ObservableCollection<MidiInputDeviceInfo> MidiDevices { get; } = new();
 
     public ObservableCollection<string> AssignmentCommands { get; } = new();
+
+    public ObservableCollection<string> LogEntries { get; } = new();
 
     public ICommand LoadMapCommand { get; }
 
@@ -112,6 +128,16 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
 
     public ICommand SaveMapCommand { get; }
 
+    public string SoftwareVersionText => $"Software version {GetApplicationVersion()}";
+
+    public ICommand ToggleLogCommand { get; }
+
+    public ICommand LearnMidiCommand { get; }
+
+    public ICommand CheckMapCommand { get; }
+
+    public ICommand RequestMixerValuesCommand { get; }
+
     public bool IsAssignmentMode
     {
         get => _isAssignmentMode;
@@ -131,6 +157,41 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
     public Visibility AssignmentPanelVisibility => IsAssignmentMode ? Visibility.Visible : Visibility.Collapsed;
 
     public string AssignmentModeText => IsAssignmentMode ? "Assign on" : "Assign";
+
+    public Visibility LogVisibility => IsLogVisible ? Visibility.Visible : Visibility.Collapsed;
+
+    public string LogToggleText => IsLogVisible ? "Log -" : "Log +";
+
+    public bool IsLogVisible
+    {
+        get => _isLogVisible;
+        private set
+        {
+            if (SetProperty(ref _isLogVisible, value))
+            {
+                OnPropertyChanged(nameof(LogVisibility));
+                OnPropertyChanged(nameof(LogToggleText));
+            }
+        }
+    }
+
+    public string SaveMapText
+    {
+        get => _saveMapText;
+        private set => SetProperty(ref _saveMapText, value);
+    }
+
+    public Brush MixerIndicatorBrush
+    {
+        get => _mixerIndicatorBrush;
+        private set => SetProperty(ref _mixerIndicatorBrush, value);
+    }
+
+    public Brush MidiIndicatorBrush
+    {
+        get => _midiIndicatorBrush;
+        private set => SetProperty(ref _midiIndicatorBrush, value);
+    }
 
     public string SelectedAssignmentCommand
     {
@@ -154,6 +215,18 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
     {
         get => _selectedSlotText;
         private set => SetProperty(ref _selectedSlotText, value);
+    }
+
+    public bool IsMapDirty
+    {
+        get => _isMapDirty;
+        private set
+        {
+            if (SetProperty(ref _isMapDirty, value))
+            {
+                SaveMapText = value ? "Save*" : "Save";
+            }
+        }
     }
 
     public MidiInputDeviceInfo? SelectedMidiDevice
@@ -216,18 +289,19 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
 
         if (!File.Exists(path))
         {
-            Status = "Map was not found. Built-in default map is used.";
+            SetStatus("Map was not found. Built-in default map is used.");
             return;
         }
 
         try
         {
             _mapEditor.LoadAsync(path).GetAwaiter().GetResult();
-            Status = $"Map loaded: {path}";
+            IsMapDirty = false;
+            SetStatus("Map loaded.");
         }
         catch (Exception exception)
         {
-            Status = $"Map load failed: {exception.Message}";
+            SetStatus($"Map load failed: {exception.Message}");
         }
     }
 
@@ -250,20 +324,26 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
                 _mapEditor.SaveAsync(sourcePath).GetAwaiter().GetResult();
             }
 
-            Status = "Map saved.";
+            IsMapDirty = false;
+            SetStatus("Map saved.");
         }
         catch (Exception exception)
         {
-            Status = $"Map save failed: {exception.Message}";
+            SetStatus($"Map save failed: {exception.Message}");
         }
     }
 
     private void ToggleAssignmentMode()
     {
         IsAssignmentMode = !IsAssignmentMode;
-        Status = IsAssignmentMode
+        SetStatus(IsAssignmentMode
             ? "Assignment mode: click a control, choose command, channel/index, then Set."
-            : "Assignment mode off.";
+            : "Assignment mode off.");
+    }
+
+    private void ToggleLog()
+    {
+        IsLogVisible = !IsLogVisible;
     }
 
     public void SelectSlot(ControlSlotViewModel slot)
@@ -279,22 +359,22 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         slot.Update(coreSlot.Snapshot());
         slot.SetSelected(true);
 
-        Status = coreSlot.MixerBinding is null
+        SetStatus(coreSlot.MixerBinding is null
             ? $"Selected {slot.Id}: no OSC binding"
-            : $"Selected {slot.Id}: {coreSlot.MixerBinding.OscAddress}";
+            : $"Selected {slot.Id}: {coreSlot.MixerBinding.OscAddress}");
     }
 
     private void ApplyAssignment()
     {
         if (_selectedSlot is null)
         {
-            Status = "Assignment: click a control first.";
+            SetStatus("Assignment: click a control first.");
             return;
         }
 
         if (!int.TryParse(AssignmentChannel, out int channel))
         {
-            Status = "Assignment: channel must be 1-18.";
+            SetStatus("Assignment: channel must be 1-18.");
             return;
         }
 
@@ -306,7 +386,7 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
 
         if (!string.IsNullOrWhiteSpace(AssignmentIndex) && index is null)
         {
-            Status = "Assignment: index must be a number or empty.";
+            SetStatus("Assignment: index must be a number or empty.");
             return;
         }
 
@@ -318,11 +398,12 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
             ControlSlot slot = _mapEditor.GetSlot(bankIndex, _selectedSlot.Id);
             _selectedSlot.Update(slot.Snapshot());
             _selectedSlot.SetSelected(true);
-            Status = $"Assigned {_selectedSlot.Id}: {slot.MixerBinding?.OscAddress}";
+            IsMapDirty = true;
+            SetStatus($"Assigned {_selectedSlot.Id}: {slot.MixerBinding?.OscAddress}");
         }
         catch (Exception exception)
         {
-            Status = $"Assignment failed: {exception.Message}";
+            SetStatus($"Assignment failed: {exception.Message}");
         }
     }
 
@@ -330,7 +411,7 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
     {
         if (_selectedSlot is null)
         {
-            Status = "Assignment: click a control first.";
+            SetStatus("Assignment: click a control first.");
             return;
         }
 
@@ -340,7 +421,105 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         ControlSlot slot = _mapEditor.GetSlot(bankIndex, _selectedSlot.Id);
         _selectedSlot.Update(slot.Snapshot());
         _selectedSlot.SetSelected(true);
-        Status = $"Cleared {_selectedSlot.Id}.";
+        IsMapDirty = true;
+        SetStatus($"Cleared {_selectedSlot.Id}.");
+    }
+
+    private void StartLearnMidi()
+    {
+        if (_selectedSlot is null)
+        {
+            SetStatus("Learn MIDI: click a control first.");
+            return;
+        }
+
+        _isLearningMidi = true;
+        SetStatus($"Learn MIDI: move a physical control for {_selectedSlot.Id}.");
+    }
+
+    private void CheckMap()
+    {
+        int missingOsc = 0;
+        int unknownOsc = 0;
+        List<string> duplicateMidi = new();
+        Dictionary<string, List<string>> midiSlots = new(StringComparer.OrdinalIgnoreCase);
+
+        foreach (ControlBank bank in _mappingEngine.Banks)
+        {
+            foreach (ControlSlot slot in bank.Slots)
+            {
+                if (slot.MixerBinding is null)
+                {
+                    missingOsc++;
+                }
+                else if (!TryResolveAssignment(slot.MixerBinding, out _))
+                {
+                    unknownOsc++;
+                }
+
+                if (slot.MidiBinding is null)
+                {
+                    continue;
+                }
+
+                string midiKey = $"{slot.MidiBinding.Kind}:{slot.MidiBinding.Channel}:{slot.MidiBinding.Number}";
+                string slotKey = $"B{bank.Index + 1}/{slot.Id}";
+
+                if (!midiSlots.TryGetValue(midiKey, out List<string>? slots))
+                {
+                    slots = new List<string>();
+                    midiSlots[midiKey] = slots;
+                }
+
+                slots.Add(slotKey);
+            }
+        }
+
+        foreach ((string midiKey, List<string> slots) in midiSlots)
+        {
+            if (slots.Count > 1)
+            {
+                duplicateMidi.Add($"{midiKey} -> {string.Join(", ", slots.Take(3))}");
+            }
+        }
+
+        string summary = $"Map check: missing OSC={missingOsc}, unknown OSC={unknownOsc}, duplicate MIDI={duplicateMidi.Count}.";
+        SetStatus(summary);
+
+        foreach (string duplicate in duplicateMidi.Take(3))
+        {
+            AddLog($"Duplicate MIDI: {duplicate}");
+        }
+    }
+
+    private async Task RequestMixerValuesAsync()
+    {
+        if (_mixer is null)
+        {
+            SetStatus("XR18 pull: mixer is not connected.");
+            return;
+        }
+
+        string[] addresses = _mappingEngine.CurrentBank.Slots
+            .Select(slot => slot.MixerBinding?.OscAddress)
+            .Where(address => !string.IsNullOrWhiteSpace(address))
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Cast<string>()
+            .ToArray();
+
+        try
+        {
+            foreach (string address in addresses)
+            {
+                await _mixer.RequestOscValueAsync(address).ConfigureAwait(true);
+            }
+
+            SetStatus($"XR18 pull: requested {addresses.Length} value(s).");
+        }
+        catch (Exception exception)
+        {
+            SetStatus($"XR18 pull failed: {exception.Message}");
+        }
     }
 
     private void RefreshMidiDevices()
@@ -361,10 +540,12 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
             MidiStatus = MidiDevices.Count == 0
                 ? "MIDI: no input devices"
                 : $"MIDI: {MidiDevices.Count} input device(s)";
+            AddLog(MidiStatus);
         }
         catch (Exception exception)
         {
             MidiStatus = $"MIDI: {exception.Message}";
+            AddLog(MidiStatus);
         }
     }
 
@@ -373,6 +554,7 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         if (SelectedMidiDevice is null)
         {
             MidiStatus = "MIDI: select input device";
+            AddLog(MidiStatus);
             return;
         }
 
@@ -380,10 +562,14 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         {
             _midi.ConnectByIndex(SelectedMidiDevice.Index);
             MidiStatus = $"MIDI: connected {SelectedMidiDevice.Name}";
+            MidiIndicatorBrush = Brushes.LimeGreen;
+            AddLog(MidiStatus);
         }
         catch (Exception exception)
         {
             MidiStatus = $"MIDI: {exception.Message}";
+            MidiIndicatorBrush = Brushes.DarkOrange;
+            AddLog(MidiStatus);
         }
     }
 
@@ -391,6 +577,8 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
     {
         _midi.Disconnect();
         MidiStatus = "MIDI: disconnected";
+        MidiIndicatorBrush = Brushes.DimGray;
+        AddLog(MidiStatus);
     }
 
     private async Task ConnectMixerAsync()
@@ -398,6 +586,8 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         if (string.IsNullOrWhiteSpace(MixerAddress))
         {
             MixerStatus = "XR18: enter address";
+            MixerIndicatorBrush = Brushes.DarkOrange;
+            AddLog(MixerStatus);
             return;
         }
 
@@ -409,15 +599,21 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         try
         {
             MixerStatus = $"XR18: connecting {MixerAddress.Trim()}";
+            MixerIndicatorBrush = Brushes.DarkOrange;
+            AddLog(MixerStatus);
             await mixer.StartAsync().ConfigureAwait(true);
             _mixer = mixer;
             MixerStatus = $"XR18: connected {MixerAddress.Trim()}";
+            MixerIndicatorBrush = Brushes.LimeGreen;
+            AddLog(MixerStatus);
         }
         catch (Exception exception)
         {
             mixer.MessageReceived -= OnMixerMessageReceived;
             await mixer.DisposeAsync().ConfigureAwait(true);
             MixerStatus = $"XR18: {exception.Message}";
+            MixerIndicatorBrush = Brushes.DarkOrange;
+            AddLog(MixerStatus);
         }
     }
 
@@ -434,6 +630,8 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         mixer.MessageReceived -= OnMixerMessageReceived;
         await mixer.DisposeAsync().ConfigureAwait(true);
         MixerStatus = "XR18: disconnected";
+        MixerIndicatorBrush = Brushes.DimGray;
+        AddLog(MixerStatus);
     }
 
     private void RefreshCurrentBank()
@@ -497,7 +695,7 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
                 RawEvent: "ui sim fader"));
         }
 
-        Status = DescribeResult("Fader simulation", result);
+        SetStatus(DescribeResult("Fader simulation", result));
     }
 
     private void SimulateMute()
@@ -515,11 +713,33 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
                 RawEvent: "ui sim mute"));
         }
 
-        Status = DescribeResult("Mute simulation", result);
+        SetStatus(DescribeResult("Mute simulation", result));
     }
 
     private async void OnMidiControlChanged(object? sender, MidiControlChangedEventArgs eventArgs)
     {
+        if (_isLearningMidi && _selectedSlot is not null)
+        {
+            RunOnUiThread(() =>
+            {
+                int bankIndex = _mappingEngine.CurrentBank.Index;
+                _mapEditor.SetMidiBinding(bankIndex, _selectedSlot.Id, new MidiBinding(
+                    ToCoreMidiMessageKind(eventArgs.Change.Kind),
+                    eventArgs.Change.Channel,
+                    eventArgs.Change.Number));
+
+                ControlSlot slot = _mapEditor.GetSlot(bankIndex, _selectedSlot.Id);
+                _selectedSlot.Update(slot.Snapshot());
+                _selectedSlot.SetSelected(true);
+                _isLearningMidi = false;
+                IsMapDirty = true;
+                MidiStatus = $"MIDI learned: {eventArgs.Change.Kind} ch={eventArgs.Change.Channel} #{eventArgs.Change.Number}";
+                SetStatus($"Learned MIDI for {_selectedSlot.Id}.");
+            });
+
+            return;
+        }
+
         MappingResult result;
 
         lock (_mappingLock)
@@ -531,6 +751,7 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         {
             MidiStatus = $"MIDI: {eventArgs.Change.Kind} ch={eventArgs.Change.Channel} #{eventArgs.Change.Number} value={eventArgs.Change.Value}";
             Status = DescribeResult("MIDI", result);
+            AddLog(Status);
         });
 
         if (result.MixerCommand is not null && _mixer is not null)
@@ -570,6 +791,7 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
             {
                 MixerStatus = FormattableString.Invariant($"XR18: {change.OscAddress}={change.Value:0.###}");
                 Status = DescribeResult("XR18", result);
+                AddLog(Status);
             });
         }
     }
@@ -592,19 +814,23 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
     {
         int column = (number - 1) % 8;
         int row = (number - 1) / 8;
-        return new ControlSlotViewModel(snapshot, 185 + column * 92, 42 + row * 112, 76, 104);
+        return new ControlSlotViewModel(snapshot, 185 + column * 92, 78 + row * 100, 76, 104);
     }
 
     private static ControlSlotViewModel CreateFader(ControlSlotSnapshot snapshot, int number)
     {
-        return new ControlSlotViewModel(snapshot, 82 + (number - 1) * 92, 488, 78, 178);
+        int left = number == 1
+            ? 82
+            : 184 + (number - 2) * 92;
+
+        return new ControlSlotViewModel(snapshot, left, 488 + WorkSurfaceOffsetY - LowerBlockOffsetY, 78, 178);
     }
 
     private static ControlSlotViewModel CreateButton(ControlSlotSnapshot snapshot, int number)
     {
         int column = (number - 1) % 8;
         int row = (number - 1) / 8;
-        return new ControlSlotViewModel(snapshot, 188 + column * 92, 382 + row * 58, 72, 44);
+        return new ControlSlotViewModel(snapshot, 188 + column * 92, 392 + WorkSurfaceOffsetY - LowerBlockOffsetY + row * 52, 72, 38);
     }
 
     private static string DescribeResult(string prefix, MappingResult result)
@@ -822,9 +1048,45 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         return luminance > 150 ? Brushes.Black : Brushes.White;
     }
 
+    private static string GetApplicationVersion()
+    {
+        Assembly assembly = typeof(MainWindowViewModel).Assembly;
+        string? informationalVersion = assembly
+            .GetCustomAttribute<AssemblyInformationalVersionAttribute>()
+            ?.InformationalVersion
+            .Split('+')[0];
+
+        if (!string.IsNullOrWhiteSpace(informationalVersion))
+        {
+            return informationalVersion;
+        }
+
+        Version? version = assembly.GetName().Version;
+        return version is null
+            ? "1.0"
+            : $"{version.Major}.{version.Minor}";
+    }
+
     private static void RunOnUiThread(Action action)
     {
         Application.Current.Dispatcher.Invoke(action);
+    }
+
+    private void SetStatus(string message)
+    {
+        Status = message;
+        AddLog(message);
+    }
+
+    private void AddLog(string message)
+    {
+        string timestamp = DateTime.Now.ToString("HH:mm:ss", CultureInfo.InvariantCulture);
+        LogEntries.Insert(0, $"{timestamp} {message}");
+
+        while (LogEntries.Count > 50)
+        {
+            LogEntries.RemoveAt(LogEntries.Count - 1);
+        }
     }
 
     public void Dispose()

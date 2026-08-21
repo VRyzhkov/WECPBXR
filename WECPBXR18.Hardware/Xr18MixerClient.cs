@@ -116,6 +116,20 @@ public sealed class Xr18MixerClient : IAsyncDisposable, IDisposable
         return Task.CompletedTask;
     }
 
+    public Task RequestOscValueAsync(string oscAddress, CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+
+        if (string.IsNullOrWhiteSpace(oscAddress))
+        {
+            throw new ArgumentException("OSC address is required.", nameof(oscAddress));
+        }
+
+        SendMessage(new OscMessage(oscAddress));
+
+        return Task.CompletedTask;
+    }
+
     public async ValueTask DisposeAsync()
     {
         if (_disposed)

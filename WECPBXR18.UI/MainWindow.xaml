@@ -6,10 +6,10 @@
         xmlns:vm="clr-namespace:WECPBXR18.UI.ViewModels"
         mc:Ignorable="d"
         Title="WECPBXR18"
-        Width="1040"
-        Height="780"
-        MinWidth="1040"
-        MinHeight="780"
+        Width="1000"
+        Height="760"
+        MinWidth="1000"
+        MinHeight="760"
         WindowStyle="None"
         ResizeMode="NoResize"
         AllowsTransparency="True"
@@ -19,19 +19,33 @@
     <Window.Resources>
         <Style x:Key="PanelButtonStyle" TargetType="{x:Type Button}">
             <Setter Property="Height" Value="28" />
-            <Setter Property="MinWidth" Value="42" />
-            <Setter Property="Padding" Value="6,0" />
+            <Setter Property="MinWidth" Value="36" />
+            <Setter Property="Padding" Value="5,0" />
             <Setter Property="Foreground" Value="#EAF0F7" />
             <Setter Property="Background" Value="#303640" />
             <Setter Property="BorderBrush" Value="#68727F" />
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="FontSize" Value="10" />
             <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type Button}">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="4">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"
+                                              Margin="{TemplateBinding Padding}" />
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
 
         <Style x:Key="PanelTextBoxStyle" TargetType="{x:Type TextBox}">
             <Setter Property="Height" Value="28" />
-            <Setter Property="Width" Value="78" />
+            <Setter Property="Width" Value="90" />
             <Setter Property="Margin" Value="0,0,6,0" />
             <Setter Property="Padding" Value="6,4" />
             <Setter Property="Foreground" Value="#EAF0F7" />
@@ -43,7 +57,7 @@
 
         <Style x:Key="PanelComboBoxStyle" TargetType="{x:Type ComboBox}">
             <Setter Property="Height" Value="28" />
-            <Setter Property="Width" Value="110" />
+            <Setter Property="Width" Value="96" />
             <Setter Property="Margin" Value="0,0,6,0" />
             <Setter Property="Foreground" Value="#11151B" />
             <Setter Property="Background" Value="#C2CAD4" />
@@ -53,14 +67,28 @@
         </Style>
 
         <Style x:Key="ControllerButtonStyle" TargetType="{x:Type Button}">
-            <Setter Property="Width" Value="58" />
-            <Setter Property="Height" Value="34" />
+            <Setter Property="Width" Value="72" />
+            <Setter Property="Height" Value="38" />
             <Setter Property="Foreground" Value="#1F2630" />
             <Setter Property="Background" Value="#BFC8D3" />
             <Setter Property="BorderBrush" Value="#050609" />
             <Setter Property="BorderThickness" Value="3" />
-            <Setter Property="FontSize" Value="10" />
+            <Setter Property="FontSize" Value="9" />
             <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type Button}">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="3">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"
+                                              Margin="{TemplateBinding Padding}" />
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
 
         <Style x:Key="WindowControlButtonStyle" TargetType="{x:Type Button}">
@@ -72,6 +100,19 @@
             <Setter Property="BorderThickness" Value="1" />
             <Setter Property="FontSize" Value="10" />
             <Setter Property="FontWeight" Value="Bold" />
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type Button}">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="3">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center" />
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
         </Style>
 
         <Style x:Key="CanvasItemStyle" TargetType="{x:Type ContentPresenter}">
@@ -106,7 +147,6 @@
                     <RowDefinition Height="18" />
                     <RowDefinition Height="52" />
                     <RowDefinition Height="16" />
-                    <RowDefinition Height="18" />
                 </Grid.RowDefinitions>
                 <TextBlock Grid.Row="0"
                            Text="{Binding Label}"
@@ -135,11 +175,7 @@
                                Margin="0,6,0,0" />
                 </Grid>
                 <ContentControl Grid.Row="2" Content="{Binding}" ContentTemplate="{StaticResource ValueBarsTemplate}" />
-                <StackPanel Grid.Row="3" Orientation="Horizontal" HorizontalAlignment="Center">
-                    <TextBlock Text="{Binding ControllerText}" Foreground="#9FCBFF" FontSize="8" Margin="0,0,5,0" />
-                    <TextBlock Text="{Binding MixerText}" Foreground="#FFE08A" FontSize="8" />
-                </StackPanel>
-                <Border Grid.RowSpan="4"
+                <Border Grid.RowSpan="3"
                         BorderBrush="{Binding SelectionBorderBrush}"
                         BorderThickness="{Binding SelectionBorderThickness}"
                         CornerRadius="6"
@@ -156,7 +192,6 @@
                     <Grid>
                         <Grid.RowDefinitions>
                             <RowDefinition Height="*" />
-                            <RowDefinition Height="12" />
                         </Grid.RowDefinitions>
                         <TextBlock Text="{Binding Label}"
                                    Foreground="#202630"
@@ -167,10 +202,6 @@
                                    TextTrimming="CharacterEllipsis"
                                    VerticalAlignment="Center"
                                    Margin="3,0" />
-                        <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Center">
-                            <TextBlock Text="{Binding ControllerText}" Foreground="#0F4D86" FontSize="7" Margin="0,0,4,0" />
-                            <TextBlock Text="{Binding MixerText}" Foreground="#775A00" FontSize="7" />
-                        </StackPanel>
                     </Grid>
                 </Border>
                 <Border BorderBrush="{Binding SelectionBorderBrush}"
@@ -186,7 +217,6 @@
                     <RowDefinition Height="22" />
                     <RowDefinition Height="102" />
                     <RowDefinition Height="18" />
-                    <RowDefinition Height="36" />
                 </Grid.RowDefinitions>
                 <TextBlock Text="{Binding Label}"
                            Foreground="#F3F6FA"
@@ -199,12 +229,12 @@
                                 HorizontalAlignment="Center"
                                 VerticalAlignment="Center"
                                 Margin="0,0,0,4">
-                        <StackPanel Margin="0,0,11,0">
-                            <Rectangle Width="17" Height="1" Fill="#89919C" Margin="0,0,0,9" />
-                            <Rectangle Width="17" Height="1" Fill="#89919C" Margin="0,0,0,9" />
-                            <Rectangle Width="17" Height="1" Fill="#89919C" Margin="0,0,0,9" />
-                            <Rectangle Width="17" Height="1" Fill="#89919C" Margin="0,0,0,9" />
-                            <Rectangle Width="17" Height="1" Fill="#89919C" />
+                        <StackPanel Margin="0,0,5,0">
+                            <Rectangle Width="13" Height="1" Fill="#89919C" Margin="0,0,0,9" />
+                            <Rectangle Width="13" Height="1" Fill="#89919C" Margin="0,0,0,9" />
+                            <Rectangle Width="13" Height="1" Fill="#89919C" Margin="0,0,0,9" />
+                            <Rectangle Width="13" Height="1" Fill="#89919C" Margin="0,0,0,9" />
+                            <Rectangle Width="13" Height="1" Fill="#89919C" />
                         </StackPanel>
                         <Grid>
                             <Rectangle Width="12"
@@ -223,21 +253,17 @@
                                     VerticalAlignment="Bottom"
                                     Margin="0,0,0,10" />
                         </Grid>
-                        <StackPanel Margin="11,0,0,0">
-                            <Rectangle Width="17" Height="1" Fill="#89919C" Margin="0,0,0,9" />
-                            <Rectangle Width="17" Height="1" Fill="#89919C" Margin="0,0,0,9" />
-                            <Rectangle Width="17" Height="1" Fill="#89919C" Margin="0,0,0,9" />
-                            <Rectangle Width="17" Height="1" Fill="#89919C" Margin="0,0,0,9" />
-                            <Rectangle Width="17" Height="1" Fill="#89919C" />
+                        <StackPanel Margin="5,0,0,0">
+                            <Rectangle Width="13" Height="1" Fill="#89919C" Margin="0,0,0,9" />
+                            <Rectangle Width="13" Height="1" Fill="#89919C" Margin="0,0,0,9" />
+                            <Rectangle Width="13" Height="1" Fill="#89919C" Margin="0,0,0,9" />
+                            <Rectangle Width="13" Height="1" Fill="#89919C" Margin="0,0,0,9" />
+                            <Rectangle Width="13" Height="1" Fill="#89919C" />
                         </StackPanel>
                     </StackPanel>
                 </Grid>
                 <ContentControl Grid.Row="2" Content="{Binding}" ContentTemplate="{StaticResource ValueBarsTemplate}" />
-                <StackPanel Grid.Row="3">
-                    <TextBlock Text="{Binding ControllerText}" Foreground="#9FCBFF" FontSize="9" TextAlignment="Center" />
-                    <TextBlock Text="{Binding MixerText}" Foreground="#FFE08A" FontSize="9" TextAlignment="Center" />
-                </StackPanel>
-                <Border Grid.RowSpan="4"
+                <Border Grid.RowSpan="3"
                         BorderBrush="{Binding SelectionBorderBrush}"
                         BorderThickness="{Binding SelectionBorderThickness}"
                         CornerRadius="6"
@@ -247,11 +273,11 @@
     </Window.Resources>
 
     <Viewbox Stretch="Uniform">
-        <Canvas Width="1000" Height="740">
-            <Border Canvas.Left="22"
+        <Canvas Width="960" Height="724">
+            <Border Canvas.Left="50"
                     Canvas.Top="20"
-                    Width="936"
-                    Height="700"
+                    Width="884"
+                    Height="680"
                     Background="#24262D"
                     BorderBrush="#050609"
                     BorderThickness="4"
@@ -283,36 +309,36 @@
                            Margin="8,0" />
             </Border>
 
-            <Button Canvas.Left="892"
-                    Canvas.Top="32"
-                    Content="_"
-                    Click="MinimizeButton_Click"
-                    Style="{StaticResource WindowControlButtonStyle}" />
-            <Button Canvas.Left="920"
-                    Canvas.Top="32"
-                    Content="X"
-                    Click="CloseButton_Click"
-                    Style="{StaticResource WindowControlButtonStyle}" />
+            <TextBlock Canvas.Left="730"
+                       Canvas.Top="632"
+                       Text="{Binding SoftwareVersionText}"
+                       Foreground="#B7C0CC"
+                       FontSize="10"
+                       FontWeight="SemiBold"
+                       Opacity="0.9" />
 
-            <TextBlock Canvas.Left="760"
-                       Canvas.Top="684"
+            <TextBlock Canvas.Left="730"
+                       Canvas.Top="648"
                        Text="EASYCONTROL PLUS"
                        Foreground="#F5F7FA"
                        FontSize="17"
                        FontWeight="SemiBold"
                        Opacity="0.95" />
 
-            <Button Canvas.Left="82" Canvas.Top="146" Content="BANK L" Command="{Binding BankPreviousCommand}" Style="{StaticResource ControllerButtonStyle}" />
-            <Button Canvas.Left="82" Canvas.Top="242" Content="BANK R" Command="{Binding BankNextCommand}" Style="{StaticResource ControllerButtonStyle}" />
-            <Button Canvas.Left="82" Canvas.Top="320" Content="SOLO" Style="{StaticResource ControllerButtonStyle}" />
-            <Button Canvas.Left="82" Canvas.Top="382" Content="SEND ALL" Style="{StaticResource ControllerButtonStyle}" />
+            <Button Canvas.Left="85" Canvas.Top="192" Content="BANK L" Command="{Binding BankPreviousCommand}" Style="{StaticResource ControllerButtonStyle}" />
+            <Button Canvas.Left="85" Canvas.Top="288" Content="BANK R" Command="{Binding BankNextCommand}" Style="{StaticResource ControllerButtonStyle}" />
+            <Button Canvas.Left="85" Canvas.Top="338" Content="SOLO" Style="{StaticResource ControllerButtonStyle}" />
+            <Button Canvas.Left="85" Canvas.Top="400" Content="SEND ALL" Style="{StaticResource ControllerButtonStyle}" />
 
-            <StackPanel Canvas.Left="82" Canvas.Top="674" Orientation="Horizontal" Visibility="{Binding NormalPanelVisibility}">
+            <StackPanel Canvas.Left="78" Canvas.Top="31" Orientation="Horizontal" Visibility="{Binding NormalPanelVisibility}">
+                <Ellipse Width="9" Height="9" Fill="{Binding MixerIndicatorBrush}" VerticalAlignment="Center" Margin="0,0,5,0" />
                 <TextBox Text="{Binding MixerAddress, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                          ToolTip="{Binding MixerStatus}"
                          Style="{StaticResource PanelTextBoxStyle}" />
                 <Button Content="X+" Command="{Binding ConnectMixerCommand}" ToolTip="Connect to XR18" Style="{StaticResource PanelButtonStyle}" Margin="0,0,6,0" />
                 <Button Content="X-" Command="{Binding DisconnectMixerCommand}" ToolTip="Disconnect from XR18" Style="{StaticResource PanelButtonStyle}" Margin="0,0,10,0" />
+                <Button Content="Pull" Command="{Binding RequestMixerValuesCommand}" ToolTip="Request current values for assigned OSC addresses" Style="{StaticResource PanelButtonStyle}" Margin="0,0,10,0" />
+                <Ellipse Width="9" Height="9" Fill="{Binding MidiIndicatorBrush}" VerticalAlignment="Center" Margin="0,0,5,0" />
                 <ComboBox ItemsSource="{Binding MidiDevices}"
                           SelectedItem="{Binding SelectedMidiDevice, Mode=TwoWay}"
                           DisplayMemberPath="Name"
@@ -323,11 +349,12 @@
                 <Button Content="M-" Command="{Binding DisconnectMidiCommand}" ToolTip="Disconnect MIDI input" Style="{StaticResource PanelButtonStyle}" Margin="0,0,10,0" />
                 <Button Content="Map" Command="{Binding LoadMapCommand}" ToolTip="Load MIDI/OSC map from midi-map.json" Style="{StaticResource PanelButtonStyle}" Margin="0,0,6,0" />
                 <Button Content="Assign" Command="{Binding ToggleAssignmentModeCommand}" ToolTip="Open function assignment mode" Style="{StaticResource PanelButtonStyle}" Margin="0,0,6,0" />
+                <Button Content="Check" Command="{Binding CheckMapCommand}" ToolTip="Check map for duplicate MIDI and missing or unknown OSC bindings" Style="{StaticResource PanelButtonStyle}" Margin="0,0,6,0" />
                 <Button Content="SF" Command="{Binding SimulateFaderCommand}" ToolTip="Simulate channel 1 fader movement" Style="{StaticResource PanelButtonStyle}" Margin="0,0,6,0" />
                 <Button Content="SM" Command="{Binding SimulateMuteCommand}" ToolTip="Simulate channel 1 mute button press" Style="{StaticResource PanelButtonStyle}" />
             </StackPanel>
 
-            <StackPanel Canvas.Left="82" Canvas.Top="674" Orientation="Horizontal" Visibility="{Binding AssignmentPanelVisibility}">
+            <StackPanel Canvas.Left="78" Canvas.Top="31" Orientation="Horizontal" Visibility="{Binding AssignmentPanelVisibility}">
                 <Button Content="{Binding AssignmentModeText}" Command="{Binding ToggleAssignmentModeCommand}" ToolTip="Close function assignment mode" Style="{StaticResource PanelButtonStyle}" Margin="0,0,8,0" />
                 <TextBlock Text="{Binding SelectedSlotText}"
                            Width="78"
@@ -351,8 +378,40 @@
                          Width="34" />
                 <Button Content="Set" Command="{Binding ApplyAssignmentCommand}" ToolTip="Assign selected function to selected control" Style="{StaticResource PanelButtonStyle}" Margin="0,0,6,0" />
                 <Button Content="Clear" Command="{Binding ClearAssignmentCommand}" ToolTip="Clear mixer function from selected control" Style="{StaticResource PanelButtonStyle}" Margin="0,0,6,0" />
-                <Button Content="Save" Command="{Binding SaveMapCommand}" ToolTip="Save current MIDI/OSC map to midi-map.json" Style="{StaticResource PanelButtonStyle}" />
+                <Button Content="Learn" Command="{Binding LearnMidiCommand}" ToolTip="Learn MIDI binding from the next physical controller event" Style="{StaticResource PanelButtonStyle}" Margin="0,0,6,0" />
+                <Button Content="Check" Command="{Binding CheckMapCommand}" ToolTip="Check map for duplicate MIDI and missing or unknown OSC bindings" Style="{StaticResource PanelButtonStyle}" Margin="0,0,6,0" />
+                <Button Content="{Binding SaveMapText}" Command="{Binding SaveMapCommand}" ToolTip="Save current MIDI/OSC map to midi-map.json" Style="{StaticResource PanelButtonStyle}" />
             </StackPanel>
+
+            <StackPanel Canvas.Left="842" Canvas.Top="31" Orientation="Horizontal">
+                <Button Content="_" Click="MinimizeButton_Click" Style="{StaticResource WindowControlButtonStyle}" Margin="0,0,8,0" />
+                <Button Content="X" Click="CloseButton_Click" Style="{StaticResource WindowControlButtonStyle}" />
+            </StackPanel>
+
+            <Border Canvas.Left="82"
+                    Canvas.Top="628"
+                    Width="630"
+                    Height="48"
+                    Background="#D920242B"
+                    BorderBrush="#59616E"
+                    BorderThickness="1"
+                    CornerRadius="4"
+                    Padding="6">
+                <ScrollViewer VerticalScrollBarVisibility="Auto"
+                              HorizontalScrollBarVisibility="Disabled">
+                    <ItemsControl ItemsSource="{Binding LogEntries}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding}"
+                                           Foreground="#D8DEE8"
+                                           FontSize="10"
+                                           TextTrimming="CharacterEllipsis"
+                                           Margin="0,0,0,2" />
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </Border>
 
             <ItemsControl ItemsSource="{Binding Knobs}" ItemTemplate="{StaticResource KnobTemplate}">
                 <ItemsControl.ItemsPanel>

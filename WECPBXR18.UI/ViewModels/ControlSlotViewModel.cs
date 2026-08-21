@@ -43,11 +43,17 @@ public sealed class ControlSlotViewModel : ObservableObject
 
     public double MixerBarWidth => ToBarWidth(_snapshot.MixerValue);
 
-    public string ControllerText => $"C {FormatValue(_snapshot.ControllerValue)}";
+    public string ControllerText => $"C {FormatDisplayValue(_snapshot.ControllerValue)}";
 
-    public string MixerText => $"M {FormatValue(_snapshot.MixerValue)}";
+    public string MixerText => $"M {FormatDisplayValue(_snapshot.MixerValue)}";
 
-    public string BindingText => _snapshot.MixerBinding?.OscAddress ?? "not assigned";
+    public string BindingText =>
+        $"{Label}\n" +
+        $"MIDI: {FormatMidiBinding(_snapshot.MidiBinding)}\n" +
+        $"OSC: {FormatMixerBinding(_snapshot.MixerBinding)}\n" +
+        $"Controller: {FormatValue(_snapshot.ControllerValue)}\n" +
+        $"Mixer: {FormatValue(_snapshot.MixerValue)}\n" +
+        $"Takeover: {(IsLocked ? "locked" : "unlocked")}";
 
     public Brush StateBrush => _snapshot.IsLocked ? Brushes.DarkOrange : Brushes.LimeGreen;
 
@@ -84,10 +90,49 @@ public sealed class ControlSlotViewModel : ObservableObject
         return Math.Clamp(value ?? 0, 0, 1) * Math.Max(0, Width - 16);
     }
 
+    private string FormatDisplayValue(double? value)
+    {
+        return _snapshot.MixerBinding?.ValueKind == MixerValueKind.Pan
+            ? FormatPanValue(value)
+            : FormatValue(value);
+    }
+
     private static string FormatValue(double? value)
     {
         return value is null
             ? "--"
             : value.Value.ToString("0.000", CultureInfo.InvariantCulture);
+    }
+
+    private static string FormatPanValue(double? value)
+    {
+        if (value is null)
+        {
+            return "--";
+        }
+
+        double offset = value.Value - 0.5;
+
+        if (Math.Abs(offset) < 0.005)
+        {
+            return "C";
+        }
+
+        int percent = (int)Math.Round(Math.Abs(offset) * 200);
+        return offset < 0 ? $"L{percent}" : $"R{percent}";
+    }
+
+    private static string FormatMidiBinding(MidiBinding? binding)
+    {
+        return binding is null
+            ? "not assigned"
+            : $"{binding.Kind} ch={binding.Channel} #{binding.Number}";
+    }
+
+    private static string FormatMixerBinding(MixerBinding? binding)
+    {
+        return binding is null
+            ? "not assigned"
+            : $"{binding.OscAddress} ({binding.ValueKind})";
     }
 }
