@@ -10,7 +10,7 @@ using MidiInputManager midi = new();
 BankSet bankSet = DefaultControlBankFactory.CreateDefaultBankSet();
 MappingEngine mappingEngine = new(bankSet);
 MidiMapEditor mapEditor = new(bankSet);
-string midiMapPath = Path.Combine("WECPBXR18.Console", "midi-map.json");
+string midiMapPath = GetDefaultMidiMapPath();
 Xr18MixerClient? mixer = null;
 string? connectedMixerAddress = null;
 
@@ -126,6 +126,20 @@ if (mixer is not null)
 }
 
 return 0;
+
+static string GetDefaultMidiMapPath()
+{
+    string outputPath = Path.Combine(AppContext.BaseDirectory, "midi-map.json");
+
+    if (File.Exists(outputPath))
+    {
+        return outputPath;
+    }
+
+    string sourcePath = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "midi-map.json"));
+
+    return File.Exists(sourcePath) ? sourcePath : outputPath;
+}
 
 static async Task<string> GetMixerAddressAsync(Xr18NetworkScanner scanner, string? addressFromCommand)
 {
@@ -338,6 +352,10 @@ static void HandleBankCommand(MappingEngine mappingEngine, string[] parts)
 
         case "status":
             PrintBankStatus(mappingEngine);
+            break;
+
+        case "layout":
+            PrintBankLayout(mappingEngine);
             break;
 
         case "next":
@@ -620,15 +638,69 @@ static void PrintBankStatus(MappingEngine mappingEngine)
     Console.WriteLine($"Assignable controls: {mappingEngine.CurrentBank.Slots.Count}");
     Console.WriteLine($"Navigation controls: {mappingEngine.CurrentBank.NavigationControls.Count}");
 
-    foreach (ControlSlotSnapshot slot in mappingEngine.GetSlotSnapshots())
+    foreach (ControlSlot slot in mappingEngine.CurrentBank.Slots.OrderBy(slot => GetPhysicalSortKey(slot.Id)))
     {
-        PrintSlotState("BANK", slot);
+        PrintSlotDetails("BANK", slot);
     }
 
     foreach (NavigationControl navigationControl in mappingEngine.CurrentBank.NavigationControls)
     {
         Console.WriteLine($"BANK {navigationControl.Label} kind={navigationControl.Kind}");
     }
+}
+
+static void PrintBankLayout(MappingEngine mappingEngine)
+{
+    PrintCurrentBank("LAYOUT", mappingEngine.CurrentBank);
+    PrintSlotRow(mappingEngine.CurrentBank, "Master", new[] { "fader-01" });
+    PrintSlotRow(mappingEngine.CurrentBank, "Levels", Enumerable.Range(2, 8).Select(number => $"fader-{number:00}"));
+    PrintSlotRow(mappingEngine.CurrentBank, "Bus 1", Enumerable.Range(1, 8).Select(number => $"knob-{number:00}"));
+    PrintSlotRow(mappingEngine.CurrentBank, "Bus 2", Enumerable.Range(9, 8).Select(number => $"knob-{number:00}"));
+    PrintSlotRow(mappingEngine.CurrentBank, "Bus 3", Enumerable.Range(17, 8).Select(number => $"knob-{number:00}"));
+    PrintSlotRow(mappingEngine.CurrentBank, "Mute", Enumerable.Range(1, 8).Select(number => $"button-{number:00}"));
+    PrintSlotRow(mappingEngine.CurrentBank, "Buttons 2", Enumerable.Range(9, 8).Select(number => $"button-{number:00}"));
+}
+
+static void PrintSlotRow(ControlBank bank, string title, IEnumerable<string> slotIds)
+{
+    Console.WriteLine($"{title}:");
+
+    foreach (string slotId in slotIds)
+    {
+        ControlSlot? slot = bank.FindSlotById(slotId);
+
+        if (slot is null)
+        {
+            Console.WriteLine($"  {slotId}: <missing>");
+            continue;
+        }
+
+        PrintSlotDetails("  ", slot);
+    }
+}
+
+static int GetPhysicalSortKey(string slotId)
+{
+    string[] parts = slotId.Split('-', StringSplitOptions.RemoveEmptyEntries);
+
+    if (parts.Length != 2 || !int.TryParse(parts[1], out int number))
+    {
+        return int.MaxValue;
+    }
+
+    return parts[0] switch
+    {
+        "fader" => number == 1 ? 0 : 100 + number,
+        "knob" => 200 + number,
+        "button" => 300 + number,
+        _ => int.MaxValue
+    };
+}
+
+static void PrintSlotDetails(string prefix, ControlSlot slot)
+{
+    PrintSlotState(prefix, slot.Snapshot());
+    Console.WriteLine($"{prefix}  midi={FormatMidiBinding(slot.MidiBinding)} mixer={FormatMixerBinding(slot.MixerBinding)}");
 }
 
 static void PrintBankList(MappingEngine mappingEngine)
@@ -814,6 +886,7 @@ static void PrintBankHelp()
     Console.WriteLine("Bank commands:");
     Console.WriteLine("  bank list             Show all banks");
     Console.WriteLine("  bank status           Show current bank control states");
+    Console.WriteLine("  bank layout           Show current bank in physical layout order");
     Console.WriteLine("  bank next             Switch to next bank, same as bankR");
     Console.WriteLine("  bank prev             Switch to previous bank, same as bankL");
     Console.WriteLine("  bank select <1-7>     Select bank by number");
@@ -862,6 +935,8 @@ static void PrintHelp()
     Console.WriteLine("  bank next                Switch to next bank");
     Console.WriteLine("  bank prev                Switch to previous bank");
     Console.WriteLine("  bank status              Show current bank control states");
+    Console.WriteLine("  bank layout              Show current bank physical layout");
+    Console.WriteLine("  map load                 Load default MIDI/OSC map JSON");
     Console.WriteLine("  map help                 Show MIDI/OSC map editor commands");
     Console.WriteLine("  help                     Show commands");
     Console.WriteLine("  exit                     Stop diagnostics");

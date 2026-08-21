@@ -12,6 +12,12 @@ dotnet run --project WECPBXR18.Console
 
 The app starts without connecting to XR18 or MIDI devices and prints the command list.
 
+To apply the default MIDI/OSC map, run:
+
+```text
+map load
+```
+
 ## Mixer Connection
 
 Connect to XR18 by address:
@@ -132,7 +138,7 @@ Prints MIDI commands.
 bank status
 ```
 
-Prints current Core bank state. Each bank contains:
+Prints current Core bank state, including values and MIDI/OSC bindings. Each bank contains:
 
 - 24 knobs
 - 9 faders
@@ -140,6 +146,20 @@ Prints current Core bank state. Each bank contains:
 - 2 navigation buttons outside the assignable control array: Bank Previous and Bank Next
 
 For every assignable control, the console prints controller value, mixer value, and soft-takeover lock state.
+
+```text
+bank layout
+```
+
+Prints the current bank in physical controller order:
+
+- Master fader
+- Channel faders
+- Bus 1 knobs
+- Bus 2 knobs
+- Bus 3 knobs
+- Mute buttons
+- Second button row
 
 ```text
 bank list
@@ -218,6 +238,12 @@ map load [path]
 ```
 
 Loads MIDI/OSC map from JSON and applies it to the current Core bank set.
+
+Without a path, loads `midi-map.json` from the application output directory. During development, if the file was not copied to output, the app falls back to the project file:
+
+```text
+WECPBXR18.Console/midi-map.json
+```
 
 ```text
 map list
