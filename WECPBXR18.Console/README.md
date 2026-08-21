@@ -129,6 +129,19 @@ midi help
 Prints MIDI commands.
 
 ```text
+bank status
+```
+
+Prints current Core bank state. The default bank contains:
+
+- 24 knobs
+- 9 faders
+- 16 assignable buttons
+- 2 navigation buttons outside the assignable control array: Bank Previous and Bank Next
+
+For every assignable control, the console prints controller value, mixer value, and soft-takeover lock state.
+
+```text
 help
 ```
 
@@ -157,5 +170,6 @@ quit   same as exit
 - The app sends `/xremote` when connected and repeats it every 5 seconds.
 - MIDI diagnostics use `Melanchall.DryWetMidi`.
 - MIDI input events are printed as raw DryWetMIDI event text. Internally the hardware layer also normalizes Control Change, Note On, Note Off, and Pitch Bend events for future mapping logic.
+- Core currently uses a provisional default MIDI map: knobs and faders are sequential Control Change values, assignable buttons are sequential Note values. Real Worlde mappings should be adjusted after checking `midi connect <index>` logs.
 - Windows Firewall can block incoming UDP responses. If scanning or live updates do not work, check firewall permissions for the console app.
 - The current scanner is intentionally simple: it searches only local `/24` subnet(s), not arbitrary routed networks.

@@ -1,3 +1,5 @@
+using WECPBXR18.Core.Mapping;
+using WECPBXR18.Core.Models;
 using WECPBXR18.Hardware;
 
 Console.WriteLine("WECPBXR18 diagnostics");
@@ -5,8 +7,23 @@ Console.WriteLine();
 
 Xr18NetworkScanner scanner = new();
 using MidiInputManager midi = new();
+MappingEngine mappingEngine = new(DefaultControlBankFactory.CreateBank());
 Xr18MixerClient? mixer = null;
 string? connectedMixerAddress = null;
+
+midi.ControlChanged += (_, eventArgs) =>
+{
+    MappingResult result = mappingEngine.HandleControllerChange(ToControllerInputChange(eventArgs.Change));
+
+    if (result.Slot is not null)
+    {
+        PrintSlotState("CORE", result.Slot);
+    }
+    else if (result.Message is not null)
+    {
+        Console.WriteLine($"CORE {result.Message}");
+    }
+};
 
 PrintHelp();
 
@@ -63,6 +80,10 @@ while (true)
                     connectedMixerAddress,
                     scanner,
                     parts);
+                break;
+
+            case "bank":
+                HandleBankCommand(mappingEngine, parts);
                 break;
 
             case "q":
@@ -264,6 +285,83 @@ static Xr18MixerClient GetConnectedMixer(Xr18MixerClient? mixer)
     return mixer;
 }
 
+static ControllerInputChange ToControllerInputChange(MidiControlChange change)
+{
+    return new ControllerInputChange(
+        ToCoreMidiMessageKind(change.Kind),
+        change.Channel,
+        change.Number,
+        change.NormalizedValue,
+        change.RawEvent);
+}
+
+static MidiMessageKind ToCoreMidiMessageKind(MidiControlKind kind)
+{
+    return kind switch
+    {
+        MidiControlKind.ControlChange => MidiMessageKind.ControlChange,
+        MidiControlKind.NoteOn => MidiMessageKind.NoteOn,
+        MidiControlKind.NoteOff => MidiMessageKind.NoteOff,
+        MidiControlKind.PitchBend => MidiMessageKind.PitchBend,
+        _ => MidiMessageKind.Other
+    };
+}
+
+static void HandleBankCommand(MappingEngine mappingEngine, string[] parts)
+{
+    if (parts.Length < 2)
+    {
+        PrintBankHelp();
+        return;
+    }
+
+    string command = parts[1].ToLowerInvariant();
+
+    switch (command)
+    {
+        case "status":
+            PrintBankStatus(mappingEngine);
+            break;
+
+        case "help":
+            PrintBankHelp();
+            break;
+
+        default:
+            Console.WriteLine($"Unknown bank command '{parts[1]}'.");
+            PrintBankHelp();
+            break;
+    }
+}
+
+static void PrintBankStatus(MappingEngine mappingEngine)
+{
+    Console.WriteLine($"Bank {mappingEngine.CurrentBank.Index}");
+    Console.WriteLine($"Assignable controls: {mappingEngine.CurrentBank.Slots.Count}");
+    Console.WriteLine($"Navigation controls: {mappingEngine.CurrentBank.NavigationControls.Count}");
+
+    foreach (ControlSlotSnapshot slot in mappingEngine.GetSlotSnapshots())
+    {
+        PrintSlotState("BANK", slot);
+    }
+
+    foreach (NavigationControl navigationControl in mappingEngine.CurrentBank.NavigationControls)
+    {
+        Console.WriteLine($"BANK {navigationControl.Label} kind={navigationControl.Kind}");
+    }
+}
+
+static void PrintSlotState(string prefix, ControlSlotSnapshot slot)
+{
+    Console.WriteLine(
+        $"{prefix} {slot.Label}: controller={FormatValue(slot.ControllerValue)} mixer={FormatValue(slot.MixerValue)} locked={slot.IsLocked}");
+}
+
+static string FormatValue(double? value)
+{
+    return value is null ? "<none>" : value.Value.ToString("0.000");
+}
+
 static void HandleMidiCommand(MidiInputManager midi, string[] parts)
 {
     if (parts.Length < 2)
@@ -365,6 +463,15 @@ static void PrintMixerHelp()
     Console.WriteLine();
 }
 
+static void PrintBankHelp()
+{
+    Console.WriteLine();
+    Console.WriteLine("Bank commands:");
+    Console.WriteLine("  bank status  Show current bank control states");
+    Console.WriteLine("  bank help    Show bank commands");
+    Console.WriteLine();
+}
+
 static void PrintHelp()
 {
     Console.WriteLine();
@@ -380,6 +487,7 @@ static void PrintHelp()
     Console.WriteLine("  midi connect <index>     Connect and log MIDI changes");
     Console.WriteLine("  midi disconnect          Disconnect MIDI input device");
     Console.WriteLine("  midi status              Show MIDI connection status");
+    Console.WriteLine("  bank status              Show current bank control states");
     Console.WriteLine("  help                     Show commands");
     Console.WriteLine("  exit                     Stop diagnostics");
     Console.WriteLine();
