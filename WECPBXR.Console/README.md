@@ -139,8 +139,7 @@ Prints current Core bank state, including values and MIDI/OSC bindings. Each ban
 
 - 24 knobs
 - 9 faders
-- 16 assignable buttons
-- 2 navigation buttons outside the assignable control array: Bank Previous and Bank Next
+- 20 assignable buttons, including `bank-prev`, `bank-next`, `solo`, and `send-all`
 
 For every assignable control, the console prints controller value, mixer value, and soft-takeover lock state.
 
@@ -150,6 +149,7 @@ bank layout
 
 Prints the current bank in physical controller order:
 
+- Special buttons
 - Master fader
 - Channel faders
 - Bus 1 knobs

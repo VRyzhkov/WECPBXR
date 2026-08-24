@@ -325,11 +325,6 @@
                        FontWeight="SemiBold"
                        Opacity="0.95" />
 
-            <Button Canvas.Left="85" Canvas.Top="203" Content="BANK L" Command="{Binding BankPreviousCommand}" Style="{StaticResource ControllerButtonStyle}" />
-            <Button Canvas.Left="85" Canvas.Top="303" Content="BANK R" Command="{Binding BankNextCommand}" Style="{StaticResource ControllerButtonStyle}" />
-            <Button Canvas.Left="85" Canvas.Top="374" Content="SOLO" Style="{StaticResource ControllerButtonStyle}" />
-            <Button Canvas.Left="85" Canvas.Top="426" Content="SEND ALL" Style="{StaticResource ControllerButtonStyle}" />
-
             <StackPanel Canvas.Left="78" Canvas.Top="31" Orientation="Horizontal" Visibility="{Binding NormalPanelVisibility}">
                 <Ellipse Width="9" Height="9" Fill="{Binding MixerIndicatorBrush}" VerticalAlignment="Center" Margin="0,0,5,0" />
                 <TextBox Text="{Binding MixerAddress, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
@@ -376,6 +371,15 @@
                          ToolTip="Bus/FX index. Empty for main, mute, pan."
                          Style="{StaticResource PanelTextBoxStyle}"
                          Width="34" />
+                <TextBox Text="{Binding AssignmentMidiChannel, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                         ToolTip="MIDI channel 1-16"
+                         Style="{StaticResource PanelTextBoxStyle}"
+                         Width="34" />
+                <TextBox Text="{Binding AssignmentMidiNumber, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
+                         ToolTip="MIDI CC number 0-127"
+                         Style="{StaticResource PanelTextBoxStyle}"
+                         Width="34" />
+                <Button Content="MIDI" Command="{Binding ApplyMidiBindingCommand}" ToolTip="Assign MIDI Control Change to selected control" Style="{StaticResource PanelButtonStyle}" Margin="0,0,6,0" />
                 <Button Content="Set" Command="{Binding ApplyAssignmentCommand}" ToolTip="Assign selected function to selected control" Style="{StaticResource PanelButtonStyle}" Margin="0,0,6,0" />
                 <Button Content="Clear" Command="{Binding ClearAssignmentCommand}" ToolTip="Clear mixer function from selected control" Style="{StaticResource PanelButtonStyle}" Margin="0,0,6,0" />
                 <Button Content="Learn" Command="{Binding LearnMidiCommand}" ToolTip="Learn MIDI binding from the next physical controller event" Style="{StaticResource PanelButtonStyle}" Margin="0,0,6,0" />

@@ -43,14 +43,9 @@ public partial class MainWindow : Window
 
     private void ControlSlot_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
-        if (!_viewModel.IsAssignmentMode)
-        {
-            return;
-        }
-
         if (sender is FrameworkElement { DataContext: ControlSlotViewModel slot })
         {
-            _viewModel.SelectSlot(slot);
+            _viewModel.HandleSlotClick(slot);
             e.Handled = true;
         }
     }

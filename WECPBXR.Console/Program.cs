@@ -847,22 +847,17 @@ static void PrintBankStatus(MappingEngine mappingEngine)
 {
     PrintCurrentBank("BANK", mappingEngine.CurrentBank);
     Console.WriteLine($"Assignable controls: {mappingEngine.CurrentBank.Slots.Count}");
-    Console.WriteLine($"Navigation controls: {mappingEngine.CurrentBank.NavigationControls.Count}");
 
     foreach (ControlSlot slot in mappingEngine.CurrentBank.Slots.OrderBy(slot => GetPhysicalSortKey(slot.Id)))
     {
         PrintSlotDetails("BANK", slot);
-    }
-
-    foreach (NavigationControl navigationControl in mappingEngine.CurrentBank.NavigationControls)
-    {
-        Console.WriteLine($"BANK {navigationControl.Label} kind={navigationControl.Kind}");
     }
 }
 
 static void PrintBankLayout(MappingEngine mappingEngine)
 {
     PrintCurrentBank("LAYOUT", mappingEngine.CurrentBank);
+    PrintSlotRow(mappingEngine.CurrentBank, "Special buttons", ["bank-prev", "bank-next", "solo", "send-all"]);
     PrintSlotRow(mappingEngine.CurrentBank, "Master", ["fader-01"]);
     PrintSlotRow(mappingEngine.CurrentBank, "Levels", Enumerable.Range(2, 8).Select(number => $"fader-{number:00}"));
     PrintSlotRow(mappingEngine.CurrentBank, "Bus 1", Enumerable.Range(1, 8).Select(number => $"knob-{number:00}"));
@@ -892,6 +887,21 @@ static void PrintSlotRow(ControlBank bank, string title, IEnumerable<string> slo
 
 static int GetPhysicalSortKey(string slotId)
 {
+    switch (slotId.ToLowerInvariant())
+    {
+        case "bank-prev":
+            return 10;
+
+        case "bank-next":
+            return 20;
+
+        case "solo":
+            return 30;
+
+        case "send-all":
+            return 40;
+    }
+
     string[] parts = slotId.Split('-', StringSplitOptions.RemoveEmptyEntries);
 
     if (parts.Length != 2 || !int.TryParse(parts[1], out int number))

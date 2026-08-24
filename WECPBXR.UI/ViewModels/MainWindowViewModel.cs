@@ -42,6 +42,8 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
     private string _selectedAssignmentCommand = "main";
     private string _assignmentChannel = "1";
     private string _assignmentIndex = "1";
+    private string _assignmentMidiChannel = "1";
+    private string _assignmentMidiNumber = "0";
     private string _selectedSlotText = "slot: none";
     private string _saveMapText = "Save";
     private Brush _mixerIndicatorBrush = Brushes.DimGray;
@@ -81,6 +83,7 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         DisconnectMixerCommand = new AsyncRelayCommand(DisconnectMixerAsync);
         ToggleAssignmentModeCommand = new RelayCommand(ToggleAssignmentMode);
         ApplyAssignmentCommand = new RelayCommand(ApplyAssignment);
+        ApplyMidiBindingCommand = new RelayCommand(ApplyMidiBinding);
         ClearAssignmentCommand = new RelayCommand(ClearAssignment);
         SaveMapCommand = new RelayCommand(SaveMap);
         ToggleLogCommand = new RelayCommand(ToggleLog);
@@ -134,6 +137,8 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
     public ICommand ToggleAssignmentModeCommand { get; }
 
     public ICommand ApplyAssignmentCommand { get; }
+
+    public ICommand ApplyMidiBindingCommand { get; }
 
     public ICommand ClearAssignmentCommand { get; }
 
@@ -220,6 +225,18 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
     {
         get => _assignmentIndex;
         set => SetProperty(ref _assignmentIndex, value);
+    }
+
+    public string AssignmentMidiChannel
+    {
+        get => _assignmentMidiChannel;
+        set => SetProperty(ref _assignmentMidiChannel, value);
+    }
+
+    public string AssignmentMidiNumber
+    {
+        get => _assignmentMidiNumber;
+        set => SetProperty(ref _assignmentMidiNumber, value);
     }
 
     public string SelectedSlotText
@@ -381,6 +398,7 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
 
         ControlSlot coreSlot = _mapEditor.GetSlot(_mappingEngine.CurrentBank.Index, slot.Id);
         LoadAssignmentFields(coreSlot);
+        LoadMidiFields(coreSlot);
         NormalizeSlotLabel(_mappingEngine.CurrentBank.Index, coreSlot);
         slot.Update(coreSlot.Snapshot());
         slot.SetSelected(true);
@@ -388,6 +406,26 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         SetStatus(coreSlot.MixerBinding is null
             ? $"Selected {slot.Id}: no OSC binding"
             : $"Selected {slot.Id}: {coreSlot.MixerBinding.OscAddress}");
+    }
+
+    public void HandleSlotClick(ControlSlotViewModel slot)
+    {
+        if (IsAssignmentMode)
+        {
+            SelectSlot(slot);
+            return;
+        }
+
+        switch (slot.Id.ToLowerInvariant())
+        {
+            case "bank-prev":
+                _mappingEngine.PreviousBank();
+                break;
+
+            case "bank-next":
+                _mappingEngine.NextBank();
+                break;
+        }
     }
 
     private void ApplyAssignment()
@@ -433,6 +471,41 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         }
     }
 
+    private void ApplyMidiBinding()
+    {
+        if (_selectedSlot is null)
+        {
+            SetStatus("MIDI assignment: click a control first.");
+            return;
+        }
+
+        if (!int.TryParse(AssignmentMidiChannel, out int midiChannel) || midiChannel is < 1 or > 16)
+        {
+            SetStatus("MIDI assignment: channel must be 1-16.");
+            return;
+        }
+
+        if (!int.TryParse(AssignmentMidiNumber, out int midiNumber) || midiNumber is < 0 or > 127)
+        {
+            SetStatus("MIDI assignment: CC must be 0-127.");
+            return;
+        }
+
+        int bankIndex = _mappingEngine.CurrentBank.Index;
+        MidiBinding binding = new(
+            MidiMessageKind.ControlChange,
+            midiChannel,
+            midiNumber);
+
+        SetMidiBinding(bankIndex, _selectedSlot.Id, binding);
+
+        ControlSlot slot = _mapEditor.GetSlot(bankIndex, _selectedSlot.Id);
+        _selectedSlot.Update(slot.Snapshot());
+        _selectedSlot.SetSelected(true);
+        IsMapDirty = true;
+        SetStatus($"Assigned MIDI for {_selectedSlot.Id}: CC ch={midiChannel} #{midiNumber}.");
+    }
+
     private void ClearAssignment()
     {
         if (_selectedSlot is null)
@@ -474,11 +547,11 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         {
             foreach (ControlSlot slot in bank.Slots)
             {
-                if (slot.MixerBinding is null)
+                if (slot.MixerBinding is null && !IsBankNavigationSlot(slot.Id))
                 {
                     missingOsc++;
                 }
-                else if (!TryResolveAssignment(slot.MixerBinding, out _))
+                else if (slot.MixerBinding is not null && !TryResolveAssignment(slot.MixerBinding, out _))
                 {
                     unknownOsc++;
                 }
@@ -762,10 +835,12 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
             RunOnUiThread(() =>
             {
                 int bankIndex = _mappingEngine.CurrentBank.Index;
-                _mapEditor.SetMidiBinding(bankIndex, _selectedSlot.Id, new MidiBinding(
+                MidiBinding binding = new(
                     ToCoreMidiMessageKind(eventArgs.Change.Kind),
                     eventArgs.Change.Channel,
-                    eventArgs.Change.Number));
+                    eventArgs.Change.Number);
+
+                SetMidiBinding(bankIndex, _selectedSlot.Id, binding);
 
                 ControlSlot slot = _mapEditor.GetSlot(bankIndex, _selectedSlot.Id);
                 _selectedSlot.Update(slot.Snapshot());
@@ -791,6 +866,11 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
             MidiStatus = $"MIDI: {eventArgs.Change.Kind} ch={eventArgs.Change.Channel} #{eventArgs.Change.Number} value={eventArgs.Change.Value}";
             Status = DescribeResult("MIDI", result);
             AddLog(Status);
+
+            if (TryHandleNavigationSlot(result.Slot, eventArgs.Change))
+            {
+                return;
+            }
         });
 
         if (result.MixerCommand is not null && _mixer is not null)
@@ -867,6 +947,21 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
 
     private static ControlSlotViewModel CreateButton(ControlSlotSnapshot snapshot, int number)
     {
+        switch (snapshot.Id.ToLowerInvariant())
+        {
+            case "bank-prev":
+                return new ControlSlotViewModel(snapshot, 85, 203, 72, 38);
+
+            case "bank-next":
+                return new ControlSlotViewModel(snapshot, 85, 303, 72, 38);
+
+            case "solo":
+                return new ControlSlotViewModel(snapshot, 85, 374, 72, 38);
+
+            case "send-all":
+                return new ControlSlotViewModel(snapshot, 85, 426, 72, 38);
+        }
+
         int column = (number - 1) % 8;
         int row = (number - 1) / 8;
         return new ControlSlotViewModel(snapshot, 188 + column * 92, 392 + WorkSurfaceOffsetY - LowerBlockOffsetY + row * 52, 72, 38);
@@ -905,6 +1000,67 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
 
         AssignmentIndex = string.Empty;
         Status = $"Selected OSC binding is not in the command catalog: {slot.MixerBinding.OscAddress}";
+    }
+
+    private void LoadMidiFields(ControlSlot slot)
+    {
+        AssignmentMidiChannel = slot.MidiBinding?.Channel.ToString(CultureInfo.InvariantCulture) ?? "1";
+        AssignmentMidiNumber = slot.MidiBinding?.Number.ToString(CultureInfo.InvariantCulture) ?? "0";
+    }
+
+    private void SetMidiBinding(int bankIndex, string slotId, MidiBinding binding)
+    {
+        if (IsBankNavigationSlot(slotId))
+        {
+            foreach (ControlBank bank in _mappingEngine.Banks)
+            {
+                _mapEditor.SetMidiBinding(bank.Index, slotId, binding);
+            }
+
+            return;
+        }
+
+        _mapEditor.SetMidiBinding(bankIndex, slotId, binding);
+    }
+
+    private bool TryHandleNavigationSlot(ControlSlotSnapshot? slot, MidiControlChange change)
+    {
+        if (slot is null || !IsMidiPress(change))
+        {
+            return false;
+        }
+
+        switch (slot.Id.ToLowerInvariant())
+        {
+            case "bank-prev":
+                _mappingEngine.PreviousBank();
+                SetStatus("Bank previous.");
+                return true;
+
+            case "bank-next":
+                _mappingEngine.NextBank();
+                SetStatus("Bank next.");
+                return true;
+
+            default:
+                return false;
+        }
+    }
+
+    private static bool IsBankNavigationSlot(string slotId)
+    {
+        return string.Equals(slotId, "bank-prev", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(slotId, "bank-next", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool IsMidiPress(MidiControlChange change)
+    {
+        return change.Kind switch
+        {
+            WECPBXR.Hardware.MidiControlKind.NoteOn => change.Value > 0,
+            WECPBXR.Hardware.MidiControlKind.ControlChange => change.NormalizedValue >= 0.5,
+            _ => false
+        };
     }
 
     private void NormalizeSlotLabel(int bankIndex, ControlSlot slot)

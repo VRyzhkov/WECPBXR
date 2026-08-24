@@ -16,7 +16,7 @@ The project targets Behringer XR12, XR16, and XR18 mixers. Most current UI label
 - Manual mixer connection by IP address, with optional pull of current mixer values.
 - Editable mapping between physical controls and mixer functions.
 - Seven software banks with independent names, colors, labels, and assignments.
-- Support for 24 knobs, 9 faders, 16 assignable buttons, and bank navigation controls.
+- Support for 24 knobs, 9 faders, and 20 assignable buttons, including `BANK L`, `BANK R`, `SOLO`, and `SEND ALL`.
 - Built-in command catalog for channel level, mute, pan, bus sends, AUX aliases, FX sends, and send on/off commands.
 - Soft takeover for continuous controls, so a fader or knob starts sending only after it catches the current mixer value.
 - Toggle-by-press behavior for button mappings such as channel mute.
@@ -80,6 +80,8 @@ The default map is stored in `WECPBXR.Console/midi-map.json` and is copied into 
 
 In the WPF UI, use `Assign` to enter assignment mode. Select a control, choose a command, set channel and index values, then click `Set`. Use `Learn` to bind the selected software control to the next incoming MIDI event. Use `Save` to write the updated map.
 
+The `slot: none` label means that no assignable control is currently selected. Click any visual control while assignment mode is enabled to select its slot. `BANK L` and `BANK R` stop switching banks while assignment mode is enabled, so they can be selected and assigned safely.
+
 Supported command keys include:
 
 - `main` - input channel main LR fader.
@@ -135,7 +137,7 @@ WECPBXR - это Windows-приложение для управления циф
 - Подключение к микшеру по IP-адресу и запрос текущих значений микшера.
 - Редактируемая карта соответствий между физическими контролами и функциями микшера.
 - Семь программных банков с отдельными названиями, цветами, подписями и назначениями.
-- Поддержка 24 энкодеров, 9 фейдеров, 16 назначаемых кнопок и кнопок переключения банков.
+- Поддержка 24 энкодеров, 9 фейдеров и 20 назначаемых кнопок, включая `BANK L`, `BANK R`, `SOLO` и `SEND ALL`.
 - Встроенный каталог команд для уровня канала, mute, panorama, посылов на bus, AUX-алиасов, FX-посылов и включения/выключения посылов.
 - Soft takeover для плавных контролов: фейдер или энкодер начинает отправлять изменения только после того, как догонит текущее значение микшера.
 - Поведение toggle-by-press для кнопок, например для mute.
@@ -198,6 +200,8 @@ dotnet run --project WECPBXR.Console
 Карта по умолчанию хранится в `WECPBXR.Console/midi-map.json` и копируется в выходную папку UI как `midi-map.json`. В карте описаны банки, подписи контролов, MIDI-привязки и OSC-привязки микшера.
 
 В WPF-интерфейсе нажмите `Assign`, чтобы перейти в режим назначения. Выберите контрол, укажите команду, канал и индекс, затем нажмите `Set`. Кнопка `Learn` назначает выбранному программному контролу следующее входящее MIDI-событие. Кнопка `Save` сохраняет обновлённую карту.
+
+Надпись `slot: none` означает, что сейчас не выбран ни один назначаемый контрол. Слот задаётся кликом по любому визуальному контролу при включённом режиме назначения. В этом режиме `BANK L` и `BANK R` не переключают банки, поэтому их можно безопасно выбрать и назначить.
 
 Поддерживаемые ключи команд:
 

@@ -7,8 +7,8 @@ public static class DefaultControlBankFactory
     public const int DefaultBankCount = 7;
     public const int KnobCount = 24;
     public const int FaderCount = 9;
-    public const int TotalHardwareButtonCount = 18;
-    public const int AssignableButtonCount = 16;
+    public const int AssignableButtonCount = 20;
+    private const int MatrixButtonCount = 16;
 
     private static readonly (string Name, RgbColor Color)[] DefaultBanks =
     [
@@ -54,7 +54,27 @@ public static class DefaultControlBankFactory
                 new MidiBinding(MidiMessageKind.ControlChange, Channel: 1, Number: KnobCount + i)));
         }
 
-        for (int i = 1; i <= AssignableButtonCount; i++)
+        slots.Add(new ControlSlot(
+            "bank-prev",
+            "BANK L",
+            ControlKind.Button));
+
+        slots.Add(new ControlSlot(
+            "bank-next",
+            "BANK R",
+            ControlKind.Button));
+
+        slots.Add(new ControlSlot(
+            "solo",
+            "SOLO",
+            ControlKind.Button));
+
+        slots.Add(new ControlSlot(
+            "send-all",
+            "SEND ALL",
+            ControlKind.Button));
+
+        for (int i = 1; i <= MatrixButtonCount; i++)
         {
             slots.Add(new ControlSlot(
                 Id("button", i),
@@ -63,13 +83,7 @@ public static class DefaultControlBankFactory
                 new MidiBinding(MidiMessageKind.NoteOn, Channel: 1, Number: KnobCount + FaderCount + i)));
         }
 
-        NavigationControl[] navigationControls =
-        [
-            new("bank-prev", "Bank Previous", NavigationControlKind.BankPrevious, null),
-            new("bank-next", "Bank Next", NavigationControlKind.BankNext, null)
-        ];
-
-        return new ControlBank(index, bankName, color, slots, navigationControls);
+        return new ControlBank(index, bankName, color, slots, []);
     }
 
     private static string Id(string prefix, int number)
