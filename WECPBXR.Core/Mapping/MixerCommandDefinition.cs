@@ -8,4 +8,7 @@ public sealed record MixerCommandDefinition(
     MixerValueKind ValueKind,
     int? MinIndex,
     int? MaxIndex,
-    string AddressPattern);
+    string AddressPattern,
+    int MinChannel = 1,
+    int MaxChannel = 18,
+    double ActionValue = 1.0);

@@ -1,11 +1,20 @@
 using System.Globalization;
 using Rug.Osc;
+using WECPBXR.Core.Configuration;
 using WECPBXR.Core.Mapping;
 using WECPBXR.Core.Models;
 using WECPBXR.Hardware;
 
 Console.WriteLine("WECPBXR diagnostics");
 Console.WriteLine();
+
+if (args.Length > 0 && args[0].Equals("--write-default-map", StringComparison.OrdinalIgnoreCase))
+{
+    string outputPath = args.Length >= 2 ? args[1] : GetDefaultMidiMapPath();
+    await MidiMapConfigurationStore.SaveAsync(DefaultControlBankFactory.CreateDefaultBankSet(), outputPath);
+    Console.WriteLine($"Default map saved: {outputPath}");
+    return 0;
+}
 
 BXrNetworkScanner scanner = new();
 using MidiInputManager midi = new();
@@ -778,7 +787,7 @@ static async Task SendMixerCommandIfConnectedAsync(BXrMixerClient? mixer, MixerO
     await mixer.SendOscValueAsync(
         command.OscAddress,
         command.Value,
-        sendInteger: command.ValueKind == MixerValueKind.Toggle);
+        sendInteger: command.ValueKind is MixerValueKind.Toggle or MixerValueKind.Action);
 }
 
 static void PrintMixerOutputCommand(string prefix, MixerOutputCommand command)
@@ -815,6 +824,7 @@ static MixerValueKind ParseMixerValueKind(string value)
         "level" => MixerValueKind.Level,
         "toggle" or "bool" or "button" => MixerValueKind.Toggle,
         "pan" => MixerValueKind.Pan,
+        "action" => MixerValueKind.Action,
         _ => throw new ArgumentException($"Unknown mixer value kind '{value}'.")
     };
 }
@@ -1128,7 +1138,7 @@ static void PrintMapHelp()
     Console.WriteLine("  map show <slotId>");
     Console.WriteLine("  map set label <slotId> <label>");
     Console.WriteLine("  map set midi <slotId> <cc|note|noteoff|pitch> <channel> <number>");
-    Console.WriteLine("  map set osc <slotId> <oscAddress> [level|toggle|pan]");
+    Console.WriteLine("  map set osc <slotId> <oscAddress> [level|toggle|pan|action]");
     Console.WriteLine("  map set command <slotId> <main|mute|pan|bus|aux|fx|bus-on|fx-on> <channel> [index]");
     Console.WriteLine("  map clear midi <slotId>");
     Console.WriteLine("  map clear osc <slotId>");

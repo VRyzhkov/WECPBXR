@@ -162,15 +162,25 @@ Prints the current bank in physical controller order:
 bank list
 ```
 
-Prints all 7 banks. Default bank colors follow the rainbow order:
+Prints all 7 banks. The default map uses these bank names:
 
-- Red
-- Orange
-- Yellow
-- Green
-- Cyan
-- Blue
-- Violet
+- Main mix
+- Monitors
+- FX
+- Dynamics/EQ
+- Utility/Safety
+- Custom 1
+- Custom 2
+
+Default MIDI setup uses Control Change on MIDI channel 1:
+
+- knobs 1-24: CC 1-24
+- faders 1-9: CC 25-33
+- `bank-prev` / `BANK L`: CC 34
+- `bank-next` / `BANK R`: CC 35
+- `solo`: CC 36
+- `send-all`: CC 37
+- assignable buttons 1-16: CC 38-53
 
 ```text
 bank next
@@ -285,7 +295,7 @@ map set midi fader-01 cc 1 25
 ```
 
 ```text
-map set osc <slotId> <oscAddress> [level|toggle|pan]
+map set osc <slotId> <oscAddress> [level|toggle|pan|action]
 ```
 
 Assigns an exact OSC address.

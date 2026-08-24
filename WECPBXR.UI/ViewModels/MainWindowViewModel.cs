@@ -880,7 +880,7 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
                 await _mixer.SendOscValueAsync(
                     result.MixerCommand.OscAddress,
                     result.MixerCommand.Value,
-                    sendInteger: result.MixerCommand.ValueKind == MixerValueKind.Toggle).ConfigureAwait(false);
+                    sendInteger: result.MixerCommand.ValueKind is MixerValueKind.Toggle or MixerValueKind.Action).ConfigureAwait(false);
             }
             catch (Exception exception)
             {
@@ -1143,6 +1143,32 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
             "fx" => $"Ch {channel} FX {index}",
             "bus-on" => $"Ch {channel} Bus {index} On",
             "fx-on" => $"Ch {channel} FX {index} On",
+            "solo" => $"Ch {channel} Solo",
+            "gain" => $"Ch {channel} Gain",
+            "hpf" => $"Ch {channel} HPF",
+            "hpf-on" => $"Ch {channel} HPF On",
+            "gate-on" => $"Ch {channel} Gate On",
+            "gate-threshold" => $"Ch {channel} Gate Thr",
+            "comp-on" => $"Ch {channel} Comp On",
+            "comp-threshold" => $"Ch {channel} Comp Thr",
+            "eq-on" => $"Ch {channel} EQ On",
+            "eq-low" => $"Ch {channel} EQ Low",
+            "eq-lowmid" => $"Ch {channel} EQ LowMid",
+            "eq-highmid" => $"Ch {channel} EQ HighMid",
+            "eq-high" => $"Ch {channel} EQ High",
+            "master" => "Main LR",
+            "master-mute" => "Main Mute",
+            "bus-master" => $"Bus {index} Master",
+            "bus-master-mute" => $"Bus {index} Mute",
+            "fx-send-master" => $"FX {index} Send",
+            "fx-return" => $"FX {index} Return",
+            "fx-return-mute" => $"FX {index} Return Mute",
+            "mute-group" => $"Mute Group {index}",
+            "clear-solo" => "Clear Solo",
+            "tap-tempo" => "Tap Tempo",
+            "scene-load" => $"Load Snapshot {index}",
+            "scene-prev" => "Snapshot Prev",
+            "scene-next" => "Snapshot Next",
             _ => $"Ch {channel} {commandKey}"
         };
     }

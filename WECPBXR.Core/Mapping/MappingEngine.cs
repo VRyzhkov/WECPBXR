@@ -88,6 +88,12 @@ public sealed class MappingEngine(
 
     private void UpdateTakeoverState(ControlSlot slot)
     {
+        if (slot.MixerBinding?.ValueKind == MixerValueKind.Action)
+        {
+            slot.SetLocked(false);
+            return;
+        }
+
         if (slot.MixerBinding?.ValueKind == MixerValueKind.Toggle)
         {
             slot.SetLocked(slot.MixerValue is null);
@@ -113,6 +119,7 @@ public sealed class MappingEngine(
 
         return slot.MixerBinding.ValueKind switch
         {
+            MixerValueKind.Action => CreateActionByPressCommand(slot, change),
             MixerValueKind.Toggle => CreateToggleByPressCommand(slot, change),
             _ => CreateContinuousCommand(slot, change)
         };
@@ -131,6 +138,13 @@ public sealed class MappingEngine(
         if (slot.MixerBinding is null)
         {
             return "OSC blocked: slot has no mixer binding.";
+        }
+
+        if (slot.MixerBinding.ValueKind == MixerValueKind.Action)
+        {
+            return IsPress(change)
+                ? "Action blocked."
+                : "Action release ignored.";
         }
 
         if (slot.MixerBinding.ValueKind == MixerValueKind.Toggle)
@@ -183,6 +197,16 @@ public sealed class MappingEngine(
         slot.SetMixerValue(nextValue);
 
         return new MixerOutputCommand(slot.MixerBinding.OscAddress, nextValue, slot.MixerBinding.ValueKind);
+    }
+
+    private static MixerOutputCommand? CreateActionByPressCommand(ControlSlot slot, ControllerInputChange change)
+    {
+        if (!IsPress(change) || slot.MixerBinding is null)
+        {
+            return null;
+        }
+
+        return new MixerOutputCommand(slot.MixerBinding.OscAddress, 1.0, slot.MixerBinding.ValueKind);
     }
 
     private static bool IsPress(ControllerInputChange change)

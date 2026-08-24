@@ -82,6 +82,35 @@ In the WPF UI, use `Assign` to enter assignment mode. Select a control, choose a
 
 The `slot: none` label means that no assignable control is currently selected. Click any visual control while assignment mode is enabled to select its slot. `BANK L` and `BANK R` stop switching banks while assignment mode is enabled, so they can be selected and assigned safely.
 
+## Default Banks
+
+The bundled map contains five ready-to-use live-sound banks and two spare banks:
+
+- `Main mix` - Main LR, channel 1-8 faders, channel pan, channel mute, channel solo, clear solo, and main mute.
+- `Monitors` - Main LR, bus 1-6 masters, bus mutes, and channel 1-8 sends to bus 1-3.
+- `FX` - FX return levels, FX send masters, channel 1-8 sends to FX 1-3, FX return mutes, tap tempo, and FX mute group.
+- `Dynamics/EQ` - Channel 1-8 compressor thresholds, EQ gain controls, HPF toggles, compressor toggles, clear solo, and mute group 1.
+- `Utility/Safety` - Mute groups, clear solo, tap tempo, snapshot previous/next, snapshot 1-4 load buttons, main mute, bus mutes, and FX mute group.
+- `Custom 1` and `Custom 2` - spare banks with MIDI bindings already assigned but no mixer OSC functions.
+
+Snapshot and tap-tempo OSC commands are included as practical utility actions, but they should be verified on your XR18 before using them in a live show.
+
+## MIDI Controller Setup
+
+Configure the Miwayer Worlde Easycontrol Plus controls as MIDI Control Change messages on MIDI channel `1`.
+
+| Control | MIDI channel | CC number |
+| --- | ---: | ---: |
+| Knob 1-24 | 1 | 1-24 |
+| Fader 1-9 | 1 | 25-33 |
+| BANK L | 1 | 34 |
+| BANK R | 1 | 35 |
+| SOLO | 1 | 36 |
+| SEND ALL | 1 | 37 |
+| Button 1-16 | 1 | 38-53 |
+
+Button-style controls should send `0` for off/release and `127` for on/press when the controller editor allows it. `BANK L` and `BANK R` are learned and stored as MIDI bindings like other controls, but WECPBXR treats their assigned MIDI messages as bank navigation commands.
+
 Supported command keys include:
 
 - `main` - input channel main LR fader.
@@ -202,6 +231,35 @@ dotnet run --project WECPBXR.Console
 В WPF-интерфейсе нажмите `Assign`, чтобы перейти в режим назначения. Выберите контрол, укажите команду, канал и индекс, затем нажмите `Set`. Кнопка `Learn` назначает выбранному программному контролу следующее входящее MIDI-событие. Кнопка `Save` сохраняет обновлённую карту.
 
 Надпись `slot: none` означает, что сейчас не выбран ни один назначаемый контрол. Слот задаётся кликом по любому визуальному контролу при включённом режиме назначения. В этом режиме `BANK L` и `BANK R` не переключают банки, поэтому их можно безопасно выбрать и назначить.
+
+## Банки по умолчанию
+
+В комплектной карте есть пять готовых банков для живой работы и два запасных банка:
+
+- `Main mix` - Main LR, фейдеры каналов 1-8, панорама каналов, mute, solo, clear solo и main mute.
+- `Monitors` - Main LR, мастера bus 1-6, mute для bus и посылы каналов 1-8 на bus 1-3.
+- `FX` - уровни FX return, мастера FX send, посылы каналов 1-8 на FX 1-3, mute FX return, tap tempo и FX mute group.
+- `Dynamics/EQ` - compressor threshold каналов 1-8, усиление полос EQ, HPF on/off, compressor on/off, clear solo и mute group 1.
+- `Utility/Safety` - mute groups, clear solo, tap tempo, snapshot previous/next, загрузка snapshots 1-4, main mute, bus mute и FX mute group.
+- `Custom 1` и `Custom 2` - запасные банки с готовыми MIDI-привязками, но без назначенных OSC-функций микшера.
+
+OSC-команды для snapshots и tap tempo добавлены как практичные служебные действия, но их нужно проверить на вашем XR18 до использования на живом выступлении.
+
+## Настройка MIDI-контроллера
+
+Настройте Miwayer Worlde Easycontrol Plus так, чтобы все органы управления отправляли MIDI Control Change на MIDI-канале `1`.
+
+| Контрол | MIDI-канал | CC number |
+| --- | ---: | ---: |
+| Knob 1-24 | 1 | 1-24 |
+| Fader 1-9 | 1 | 25-33 |
+| BANK L | 1 | 34 |
+| BANK R | 1 | 35 |
+| SOLO | 1 | 36 |
+| SEND ALL | 1 | 37 |
+| Button 1-16 | 1 | 38-53 |
+
+Для кнопок желательно настроить значение `0` на отпускание/off и `127` на нажатие/on, если редактор контроллера это позволяет. `BANK L` и `BANK R` обучаются и сохраняются как обычные MIDI-привязки, но WECPBXR использует назначенные на них MIDI-сообщения как команды переключения банков.
 
 Поддерживаемые ключи команд:
 

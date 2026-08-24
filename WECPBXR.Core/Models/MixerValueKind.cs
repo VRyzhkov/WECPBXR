@@ -4,5 +4,6 @@ public enum MixerValueKind
 {
     Level,
     Toggle,
-    Pan
+    Pan,
+    Action
 }
