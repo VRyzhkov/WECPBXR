@@ -1,6 +1,6 @@
 using System.Globalization;
-using System.Windows;
-using System.Windows.Media;
+using Avalonia;
+using Avalonia.Media;
 using WECPBXR.Core.Models;
 
 namespace WECPBXR.UI.ViewModels;
@@ -51,7 +51,7 @@ public sealed class ControlSlotViewModel(
         $"Mixer: {FormatValue(_snapshot.MixerValue)}\n" +
         $"Takeover: {(IsLocked ? "locked" : "unlocked")}";
 
-    public Brush StateBrush => _snapshot.IsLocked ? Brushes.DarkOrange : Brushes.LimeGreen;
+    public IBrush StateBrush => _snapshot.IsLocked ? Brushes.DarkOrange : Brushes.LimeGreen;
 
     public bool IsSelected
     {
@@ -66,7 +66,7 @@ public sealed class ControlSlotViewModel(
         }
     }
 
-    public Brush SelectionBorderBrush => IsSelected ? Brushes.White : Brushes.Transparent;
+    public IBrush SelectionBorderBrush => IsSelected ? Brushes.White : Brushes.Transparent;
 
     public Thickness SelectionBorderThickness => IsSelected ? new Thickness(2) : new Thickness(0);
 

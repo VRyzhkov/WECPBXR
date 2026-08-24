@@ -2,9 +2,10 @@ using System.Collections.ObjectModel;
 using System.Globalization;
 using System.IO;
 using System.Reflection;
-using System.Windows;
+using Avalonia;
+using Avalonia.Threading;
 using System.Windows.Input;
-using System.Windows.Media;
+using Avalonia.Media;
 using Rug.Osc;
 using WECPBXR.Core.Mapping;
 using WECPBXR.Core.Models;
@@ -30,8 +31,8 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
 
     private string _bankTitle = string.Empty;
     private string _bankColorText = string.Empty;
-    private Brush _bankBrush = Brushes.Red;
-    private Brush _bankTextBrush = Brushes.Black;
+    private IBrush _bankBrush = Brushes.Red;
+    private IBrush _bankTextBrush = Brushes.Black;
     private string _status = "Ready";
     private string _mixerAddress = "192.168.1.100";
     private string _mixerStatus = "XR: disconnected";
@@ -47,8 +48,8 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
     private string _assignmentMidiNumber = "0";
     private string _selectedSlotText = "slot: none";
     private string _saveMapText = "Save";
-    private Brush _mixerIndicatorBrush = Brushes.DimGray;
-    private Brush _midiIndicatorBrush = Brushes.DimGray;
+    private IBrush _mixerIndicatorBrush = Brushes.DimGray;
+    private IBrush _midiIndicatorBrush = Brushes.DimGray;
     private ControlSlotViewModel? _selectedSlot;
     private MidiInputDeviceInfo? _selectedMidiDevice;
     private BXrMixerClient? _mixer;
@@ -163,20 +164,20 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         {
             if (SetProperty(ref _isAssignmentMode, value))
             {
-                OnPropertyChanged(nameof(NormalPanelVisibility));
-                OnPropertyChanged(nameof(AssignmentPanelVisibility));
+                OnPropertyChanged(nameof(IsNormalPanelVisible));
+                OnPropertyChanged(nameof(IsAssignmentPanelVisible));
                 OnPropertyChanged(nameof(AssignmentModeText));
             }
         }
     }
 
-    public Visibility NormalPanelVisibility => IsAssignmentMode ? Visibility.Collapsed : Visibility.Visible;
+    public bool IsNormalPanelVisible => !IsAssignmentMode;
 
-    public Visibility AssignmentPanelVisibility => IsAssignmentMode ? Visibility.Visible : Visibility.Collapsed;
+    public bool IsAssignmentPanelVisible => IsAssignmentMode;
 
     public string AssignmentModeText => IsAssignmentMode ? "Assign on" : "Assign";
 
-    public Visibility LogVisibility => IsLogVisible ? Visibility.Visible : Visibility.Collapsed;
+    public bool IsLogPanelVisible => IsLogVisible;
 
     public string LogToggleText => IsLogVisible ? "Log -" : "Log +";
 
@@ -187,7 +188,7 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         {
             if (SetProperty(ref _isLogVisible, value))
             {
-                OnPropertyChanged(nameof(LogVisibility));
+                OnPropertyChanged(nameof(IsLogPanelVisible));
                 OnPropertyChanged(nameof(LogToggleText));
             }
         }
@@ -199,13 +200,13 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         private set => SetProperty(ref _saveMapText, value);
     }
 
-    public Brush MixerIndicatorBrush
+    public IBrush MixerIndicatorBrush
     {
         get => _mixerIndicatorBrush;
         private set => SetProperty(ref _mixerIndicatorBrush, value);
     }
 
-    public Brush MidiIndicatorBrush
+    public IBrush MidiIndicatorBrush
     {
         get => _midiIndicatorBrush;
         private set => SetProperty(ref _midiIndicatorBrush, value);
@@ -295,13 +296,13 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         private set => SetProperty(ref _bankColorText, value);
     }
 
-    public Brush BankBrush
+    public IBrush BankBrush
     {
         get => _bankBrush;
         private set => SetProperty(ref _bankBrush, value);
     }
 
-    public Brush BankTextBrush
+    public IBrush BankTextBrush
     {
         get => _bankTextBrush;
         private set => SetProperty(ref _bankTextBrush, value);
@@ -1312,7 +1313,7 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         return Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "midi-map.json"));
     }
 
-    private static Brush GetReadableTextBrush(RgbColor color)
+    private static IBrush GetReadableTextBrush(RgbColor color)
     {
         double luminance = (0.299 * color.Red) + (0.587 * color.Green) + (0.114 * color.Blue);
         return luminance > 150 ? Brushes.Black : Brushes.White;
@@ -1339,7 +1340,7 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
 
     private static void RunOnUiThread(Action action)
     {
-        Application.Current.Dispatcher.Invoke(action);
+        Dispatcher.UIThread.Post(action);
     }
 
     private void SetStatus(string message)

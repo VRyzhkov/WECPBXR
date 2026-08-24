@@ -1,6 +1,6 @@
 # WECPBXR.Console
 
-Diagnostic console application for checking MIDI controller input and OSC communication with Behringer XR series before the WPF UI is ready.
+Diagnostic console application for checking MIDI controller input and OSC communication with Behringer XR series alongside the Avalonia desktop UI.
 
 ## Run
 

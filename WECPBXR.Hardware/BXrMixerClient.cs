@@ -169,7 +169,7 @@ public sealed class BXrMixerClient(
     {
         if (channel is < 1 or > 18)
         {
-            throw new ArgumentOutOfRangeException(nameof(channel), "XR18 channel must be in range 1-18.");
+            throw new ArgumentOutOfRangeException(nameof(channel), "XR channel must be in range 1-18.");
         }
     }
 
@@ -189,7 +189,7 @@ public sealed class BXrMixerClient(
             }
             catch (Exception exception)
             {
-                Console.Error.WriteLine($"XR18 OSC receive error: {exception.Message}");
+                Console.Error.WriteLine($"XR OSC receive error: {exception.Message}");
             }
         }
     }
@@ -211,7 +211,7 @@ public sealed class BXrMixerClient(
             }
             catch (Exception exception)
             {
-                Console.Error.WriteLine($"XR18 /xremote send error: {exception.Message}");
+                Console.Error.WriteLine($"XR /xremote send error: {exception.Message}");
             }
         }
     }
@@ -225,7 +225,7 @@ public sealed class BXrMixerClient(
     {
         ThrowIfDisposed();
 
-        OscSender sender = _sender ?? throw new InvalidOperationException("XR18 mixer client is not started.");
+        OscSender sender = _sender ?? throw new InvalidOperationException("XR mixer client is not started.");
 
         lock (_sendLock)
         {

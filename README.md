@@ -3,13 +3,13 @@
 > [!WARNING]
 > WECPBXR is beta software and is still being tested with real MIDI controllers and Behringer XR mixers.
 
-WECPBXR is a Windows application for controlling Behringer XR series digital mixers over Ethernet with a Miwayer Worlde Easycontrol Plus MIDI controller. It translates incoming MIDI messages into XR-compatible OSC commands, keeps the software control state synchronized with mixer values, and provides an editable MIDI-to-mixer map for practical live sound workflows.
+WECPBXR is a cross-platform desktop application for controlling Behringer XR series digital mixers over Ethernet with a Miwayer Worlde Easycontrol Plus MIDI controller. It translates incoming MIDI messages into XR-compatible OSC commands, keeps the software control state synchronized with mixer values, and provides an editable MIDI-to-mixer map for practical live sound workflows.
 
 The project targets Behringer XR-series mixers. UI labels and diagnostics use the general XR name because these mappings target the full XR family.
 
 ## Main Features
 
-- WPF desktop interface styled after the Easycontrol Plus surface.
+- Avalonia desktop interface styled after the Easycontrol Plus surface.
 - OSC communication with Behringer XR mixers over UDP port `10024`.
 - MIDI input support through `Melanchall.DryWetMidi`.
 - Automatic or manual connection to a selected MIDI input device.
@@ -24,24 +24,25 @@ The project targets Behringer XR-series mixers. UI labels and diagnostics use th
 - Assignment mode for changing mixer bindings directly in the UI.
 - MIDI learn mode for assigning the next physical controller event to the selected software control.
 - Map validation for missing OSC bindings, unknown OSC bindings, and duplicate MIDI assignments.
-- Diagnostic console application for scanning mixers, testing MIDI input, editing maps, and simulating MIDI or mixer events without the WPF UI.
+- Diagnostic console application for scanning mixers, testing MIDI input, editing maps, and simulating MIDI or mixer events without the desktop UI.
 
 ## Solution Structure
 
-- `WECPBXR.UI` - WPF desktop application and user settings.
+- `WECPBXR.UI` - Avalonia desktop application and user settings.
 - `WECPBXR.Console` - diagnostic console utility for hardware checks and map editing.
 - `WECPBXR.Core` - bank model, mapping engine, MIDI/OSC map configuration, mixer command catalog, and soft-takeover logic.
 - `WECPBXR.Hardware` - MIDI input handling, OSC mixer client, and local network scanner.
 
 ## Requirements
 
-- Windows.
+- Windows or Linux.
+- If you use a Mac, buy yourself professional equipment.
 - .NET 8 SDK for building from source.
 - A Behringer XR-series mixer reachable on the local network.
 - A Miwayer Worlde Easycontrol Plus MIDI controller, or another MIDI controller with a compatible/custom map.
 - Network access to the mixer on UDP port `10024`.
 
-Windows Firewall can block incoming UDP responses from the mixer. If discovery or live updates do not work, check firewall permissions for the application.
+Windows Firewall can block incoming UDP responses from the mixer. On Linux, local firewall rules or missing MIDI permissions can cause similar symptoms. If discovery, MIDI input, or live updates do not work, check OS permissions and firewall settings.
 
 ## Build
 
@@ -51,10 +52,17 @@ From the repository root:
 dotnet build WECPBXR.slnx
 ```
 
-Run the WPF application:
+Run the Avalonia desktop application:
 
 ```powershell
 dotnet run --project WECPBXR.UI
+```
+
+Publish platform-specific desktop builds:
+
+```powershell
+dotnet publish WECPBXR.UI -c Release -r win-x64 --self-contained true
+dotnet publish WECPBXR.UI -c Release -r linux-x64 --self-contained true
 ```
 
 Run the diagnostic console:
@@ -78,7 +86,7 @@ dotnet run --project WECPBXR.Console
 
 The default map is stored in `WECPBXR.Console/midi-map.json` and is copied into the UI output as `midi-map.json`. The map contains bank definitions, control labels, MIDI bindings, and mixer OSC bindings.
 
-In the WPF UI, use `Assign` to enter assignment mode. Select a control, choose a command, set channel and index values, then click `Set`. Use `Learn` to bind the selected software control to the next incoming MIDI event. Use `Save` to write the updated map.
+In the desktop UI, use `Assign` to enter assignment mode. Select a control, choose a command, set channel and index values, then click `Set`. Use `Learn` to bind the selected software control to the next incoming MIDI event. Use `Save` to write the updated map.
 
 The `slot: none` label means that no assignable control is currently selected. Click any visual control while assignment mode is enabled to select its slot. `BANK L` and `BANK R` stop switching banks while assignment mode is enabled, so they can be selected and assigned safely.
 
@@ -155,13 +163,13 @@ If this project saved your time or helped your setup, you can support the author
 > [!WARNING]
 > WECPBXR - бета-версия программы. Она ещё проходит проверку с реальными MIDI-контроллерами и микшерами Behringer XR.
 
-WECPBXR - это Windows-приложение для управления цифровыми микшерами Behringer серии XR по Ethernet с помощью MIDI-контроллера Miwayer Worlde Easycontrol Plus. Программа преобразует входящие MIDI-сообщения в OSC-команды, понятные микшеру XR, синхронизирует состояние программных контролов со значениями микшера и позволяет редактировать карту соответствий между MIDI-контроллером и функциями микшера.
+WECPBXR - это кроссплатформенное desktop-приложение для управления цифровыми микшерами Behringer серии XR по Ethernet с помощью MIDI-контроллера Miwayer Worlde Easycontrol Plus. Программа преобразует входящие MIDI-сообщения в OSC-команды, понятные микшеру XR, синхронизирует состояние программных контролов со значениями микшера и позволяет редактировать карту соответствий между MIDI-контроллером и функциями микшера.
 
 Проект рассчитан на микшеры Behringer серии XR. В интерфейсе и диагностике используется общее название XR, потому что назначения рассчитаны на всё семейство XR.
 
 ## Основной функционал
 
-- WPF-интерфейс, визуально повторяющий рабочую поверхность Easycontrol Plus.
+- Avalonia-интерфейс, визуально повторяющий рабочую поверхность Easycontrol Plus.
 - Обмен OSC-сообщениями с микшерами Behringer XR по UDP-порту `10024`.
 - Работа с MIDI-входом через `Melanchall.DryWetMidi`.
 - Ручное или автоматическое подключение к выбранному MIDI-устройству.
@@ -176,24 +184,25 @@ WECPBXR - это Windows-приложение для управления циф
 - Режим назначения функций прямо в интерфейсе.
 - MIDI learn: назначение следующего физического MIDI-события на выбранный программный контрол.
 - Проверка карты на отсутствующие OSC-назначения, неизвестные OSC-адреса и дублирующиеся MIDI-назначения.
-- Диагностическая консоль для поиска микшеров, проверки MIDI-входа, редактирования карты и симуляции MIDI/OSC-событий без WPF-интерфейса.
+- Диагностическая консоль для поиска микшеров, проверки MIDI-входа, редактирования карты и симуляции MIDI/OSC-событий без desktop-интерфейса.
 
 ## Структура решения
 
-- `WECPBXR.UI` - WPF-приложение и пользовательские настройки.
+- `WECPBXR.UI` - Avalonia-приложение и пользовательские настройки.
 - `WECPBXR.Console` - диагностическая консоль для проверки оборудования и редактирования карты.
 - `WECPBXR.Core` - модель банков, движок маппинга, конфигурация MIDI/OSC-карты, каталог команд микшера и логика soft takeover.
 - `WECPBXR.Hardware` - работа с MIDI-входом, OSC-клиент микшера и сканер локальной сети.
 
 ## Требования
 
-- Windows.
+- Windows или Linux.
+- Если вы используете Mac - купите себе профессиональное оборудование.
 - .NET 8 SDK для сборки из исходников.
 - Микшер Behringer серии XR, доступный в локальной сети.
 - MIDI-контроллер Miwayer Worlde Easycontrol Plus или другой MIDI-контроллер с совместимой/настроенной картой.
 - Сетевой доступ к микшеру по UDP-порту `10024`.
 
-Windows Firewall может блокировать входящие UDP-ответы от микшера. Если поиск устройств или живое обновление значений не работает, проверьте разрешения firewall для приложения.
+Windows Firewall может блокировать входящие UDP-ответы от микшера. В Linux похожие симптомы могут вызывать правила локального firewall или права доступа к MIDI-устройствам. Если поиск устройств, MIDI-вход или живое обновление значений не работают, проверьте разрешения ОС и настройки firewall.
 
 ## Сборка и запуск
 
@@ -203,10 +212,17 @@ Windows Firewall может блокировать входящие UDP-отве
 dotnet build WECPBXR.slnx
 ```
 
-Запуск WPF-приложения:
+Запуск Avalonia-приложения:
 
 ```powershell
 dotnet run --project WECPBXR.UI
+```
+
+Публикация desktop-сборок под конкретные платформы:
+
+```powershell
+dotnet publish WECPBXR.UI -c Release -r win-x64 --self-contained true
+dotnet publish WECPBXR.UI -c Release -r linux-x64 --self-contained true
 ```
 
 Запуск диагностической консоли:
@@ -230,7 +246,7 @@ dotnet run --project WECPBXR.Console
 
 Карта по умолчанию хранится в `WECPBXR.Console/midi-map.json` и копируется в выходную папку UI как `midi-map.json`. В карте описаны банки, подписи контролов, MIDI-привязки и OSC-привязки микшера.
 
-В WPF-интерфейсе нажмите `Assign`, чтобы перейти в режим назначения. Выберите контрол, укажите команду, канал и индекс, затем нажмите `Set`. Кнопка `Learn` назначает выбранному программному контролу следующее входящее MIDI-событие. Кнопка `Save` сохраняет обновлённую карту.
+В desktop-интерфейсе нажмите `Assign`, чтобы перейти в режим назначения. Выберите контрол, укажите команду, канал и индекс, затем нажмите `Set`. Кнопка `Learn` назначает выбранному программному контролу следующее входящее MIDI-событие. Кнопка `Save` сохраняет обновлённую карту.
 
 Надпись `slot: none` означает, что сейчас не выбран ни один назначаемый контрол. Слот задаётся кликом по любому визуальному контролу при включённом режиме назначения. В этом режиме `BANK L` и `BANK R` не переключают банки, поэтому их можно безопасно выбрать и назначить.
 

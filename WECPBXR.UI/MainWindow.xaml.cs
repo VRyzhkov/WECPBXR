@@ -1,8 +1,9 @@
-using System.Windows;
-using System.Windows.Controls;
-using System.Windows.Controls.Primitives;
-using System.Windows.Input;
-using System.Windows.Media;
+using Avalonia;
+using Avalonia.Controls;
+using Avalonia.Controls.Primitives;
+using Avalonia.Input;
+using Avalonia.Interactivity;
+using Avalonia.VisualTree;
 using WECPBXR.UI.ViewModels;
 
 namespace WECPBXR.UI;
@@ -18,32 +19,33 @@ public partial class MainWindow : Window
         DataContext = _viewModel;
     }
 
-    private void Window_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    private void Window_PointerPressed(object? sender, PointerPressedEventArgs e)
     {
-        if (IsInteractiveElement(e.OriginalSource as DependencyObject))
+        if (IsInteractiveElement(e.Source as Visual))
         {
             return;
         }
 
-        if (e.ButtonState == MouseButtonState.Pressed)
+        if (e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
         {
-            DragMove();
+            BeginMoveDrag(e);
         }
     }
 
-    private void MinimizeButton_Click(object sender, RoutedEventArgs e)
+    private void MinimizeButton_Click(object? sender, RoutedEventArgs e)
     {
         WindowState = WindowState.Minimized;
     }
 
-    private void CloseButton_Click(object sender, RoutedEventArgs e)
+    private void CloseButton_Click(object? sender, RoutedEventArgs e)
     {
         Close();
     }
 
-    private void ControlSlot_PreviewMouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+    private void ControlSlot_PointerPressed(object? sender, PointerPressedEventArgs e)
     {
-        if (sender is FrameworkElement { DataContext: ControlSlotViewModel slot })
+        if (sender is StyledElement { DataContext: ControlSlotViewModel slot } &&
+            e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
         {
             _viewModel.HandleSlotClick(slot);
             e.Handled = true;
@@ -56,16 +58,16 @@ public partial class MainWindow : Window
         base.OnClosed(e);
     }
 
-    private static bool IsInteractiveElement(DependencyObject? source)
+    private static bool IsInteractiveElement(Visual? source)
     {
         while (source is not null)
         {
-            if (source is ButtonBase or TextBox or ComboBox)
+            if (source is Button or TextBox or ComboBox)
             {
                 return true;
             }
 
-            source = VisualTreeHelper.GetParent(source);
+            source = source.GetVisualParent();
         }
 
         return false;
