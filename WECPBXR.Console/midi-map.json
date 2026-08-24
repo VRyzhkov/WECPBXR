@@ -3,7 +3,7 @@
   "Banks": [
     {
       "Index": 0,
-      "Name": "Main mix",
+      "Name": "Main mix 1-8",
       "Color": {
         "Red": 255,
         "Green": 0,
@@ -116,111 +116,87 @@
         },
         {
           "Id": "knob-09",
-          "Label": "Ch 9 Pan",
+          "Label": "Main mix 1-8 Knob 9",
           "Midi": {
             "Kind": "ControlChange",
             "Channel": 1,
             "Number": 9
           },
-          "Mixer": {
-            "OscAddress": "/ch/09/mix/pan",
-            "ValueKind": "Pan"
-          }
+          "Mixer": null
         },
         {
           "Id": "knob-10",
-          "Label": "Ch 10 Pan",
+          "Label": "Main mix 1-8 Knob 10",
           "Midi": {
             "Kind": "ControlChange",
             "Channel": 1,
             "Number": 10
           },
-          "Mixer": {
-            "OscAddress": "/ch/10/mix/pan",
-            "ValueKind": "Pan"
-          }
+          "Mixer": null
         },
         {
           "Id": "knob-11",
-          "Label": "Ch 11 Pan",
+          "Label": "Main mix 1-8 Knob 11",
           "Midi": {
             "Kind": "ControlChange",
             "Channel": 1,
             "Number": 11
           },
-          "Mixer": {
-            "OscAddress": "/ch/11/mix/pan",
-            "ValueKind": "Pan"
-          }
+          "Mixer": null
         },
         {
           "Id": "knob-12",
-          "Label": "Ch 12 Pan",
+          "Label": "Main mix 1-8 Knob 12",
           "Midi": {
             "Kind": "ControlChange",
             "Channel": 1,
             "Number": 12
           },
-          "Mixer": {
-            "OscAddress": "/ch/12/mix/pan",
-            "ValueKind": "Pan"
-          }
+          "Mixer": null
         },
         {
           "Id": "knob-13",
-          "Label": "Ch 13 Pan",
+          "Label": "Main mix 1-8 Knob 13",
           "Midi": {
             "Kind": "ControlChange",
             "Channel": 1,
             "Number": 13
           },
-          "Mixer": {
-            "OscAddress": "/ch/13/mix/pan",
-            "ValueKind": "Pan"
-          }
+          "Mixer": null
         },
         {
           "Id": "knob-14",
-          "Label": "Ch 14 Pan",
+          "Label": "Main mix 1-8 Knob 14",
           "Midi": {
             "Kind": "ControlChange",
             "Channel": 1,
             "Number": 14
           },
-          "Mixer": {
-            "OscAddress": "/ch/14/mix/pan",
-            "ValueKind": "Pan"
-          }
+          "Mixer": null
         },
         {
           "Id": "knob-15",
-          "Label": "Ch 15 Pan",
+          "Label": "Main mix 1-8 Knob 15",
           "Midi": {
             "Kind": "ControlChange",
             "Channel": 1,
             "Number": 15
           },
-          "Mixer": {
-            "OscAddress": "/ch/15/mix/pan",
-            "ValueKind": "Pan"
-          }
+          "Mixer": null
         },
         {
           "Id": "knob-16",
-          "Label": "Ch 16 Pan",
+          "Label": "Main mix 1-8 Knob 16",
           "Midi": {
             "Kind": "ControlChange",
             "Channel": 1,
             "Number": 16
           },
-          "Mixer": {
-            "OscAddress": "/ch/16/mix/pan",
-            "ValueKind": "Pan"
-          }
+          "Mixer": null
         },
         {
           "Id": "knob-17",
-          "Label": "Main mix Knob 17",
+          "Label": "Main mix 1-8 Knob 17",
           "Midi": {
             "Kind": "ControlChange",
             "Channel": 1,
@@ -230,7 +206,7 @@
         },
         {
           "Id": "knob-18",
-          "Label": "Main mix Knob 18",
+          "Label": "Main mix 1-8 Knob 18",
           "Midi": {
             "Kind": "ControlChange",
             "Channel": 1,
@@ -240,7 +216,7 @@
         },
         {
           "Id": "knob-19",
-          "Label": "Main mix Knob 19",
+          "Label": "Main mix 1-8 Knob 19",
           "Midi": {
             "Kind": "ControlChange",
             "Channel": 1,
@@ -250,7 +226,7 @@
         },
         {
           "Id": "knob-20",
-          "Label": "Main mix Knob 20",
+          "Label": "Main mix 1-8 Knob 20",
           "Midi": {
             "Kind": "ControlChange",
             "Channel": 1,
@@ -260,7 +236,7 @@
         },
         {
           "Id": "knob-21",
-          "Label": "Main mix Knob 21",
+          "Label": "Main mix 1-8 Knob 21",
           "Midi": {
             "Kind": "ControlChange",
             "Channel": 1,
@@ -270,7 +246,7 @@
         },
         {
           "Id": "knob-22",
-          "Label": "Main mix Knob 22",
+          "Label": "Main mix 1-8 Knob 22",
           "Midi": {
             "Kind": "ControlChange",
             "Channel": 1,
@@ -280,7 +256,7 @@
         },
         {
           "Id": "knob-23",
-          "Label": "Main mix Knob 23",
+          "Label": "Main mix 1-8 Knob 23",
           "Midi": {
             "Kind": "ControlChange",
             "Channel": 1,
@@ -290,7 +266,7 @@
         },
         {
           "Id": "knob-24",
-          "Label": "Main mix Knob 24",
+          "Label": "Main mix 1-8 Knob 24",
           "Midi": {
             "Kind": "ControlChange",
             "Channel": 1,
@@ -673,10 +649,656 @@
     },
     {
       "Index": 1,
-      "Name": "Monitors",
+      "Name": "Main mix 9-16",
       "Color": {
         "Red": 255,
         "Green": 127,
+        "Blue": 0
+      },
+      "Slots": [
+        {
+          "Id": "knob-01",
+          "Label": "Ch 9 Pan",
+          "Midi": {
+            "Kind": "ControlChange",
+            "Channel": 1,
+            "Number": 1
+          },
+          "Mixer": {
+            "OscAddress": "/ch/09/mix/pan",
+            "ValueKind": "Pan"
+          }
+        },
+        {
+          "Id": "knob-02",
+          "Label": "Ch 10 Pan",
+          "Midi": {
+            "Kind": "ControlChange",
+            "Channel": 1,
+            "Number": 2
+          },
+          "Mixer": {
+            "OscAddress": "/ch/10/mix/pan",
+            "ValueKind": "Pan"
+          }
+        },
+        {
+          "Id": "knob-03",
+          "Label": "Ch 11 Pan",
+          "Midi": {
+            "Kind": "ControlChange",
+            "Channel": 1,
+            "Number": 3
+          },
+          "Mixer": {
+            "OscAddress": "/ch/11/mix/pan",
+            "ValueKind": "Pan"
+          }
+        },
+        {
+          "Id": "knob-04",
+          "Label": "Ch 12 Pan",
+          "Midi": {
+            "Kind": "ControlChange",
+            "Channel": 1,
+            "Number": 4
+          },
+          "Mixer": {
+            "OscAddress": "/ch/12/mix/pan",
+            "ValueKind": "Pan"
+          }
+        },
+        {
+          "Id": "knob-05",
+          "Label": "Ch 13 Pan",
+          "Midi": {
+            "Kind": "ControlChange",
+            "Channel": 1,
+            "Number": 5
+          },
+          "Mixer": {
+            "OscAddress": "/ch/13/mix/pan",
+            "ValueKind": "Pan"
+          }
+        },
+        {
+          "Id": "knob-06",
+          "Label": "Ch 14 Pan",
+          "Midi": {
+            "Kind": "ControlChange",
+            "Channel": 1,
+            "Number": 6
+          },
+          "Mixer": {
+            "OscAddress": "/ch/14/mix/pan",
+            "ValueKind": "Pan"
+          }
+        },
+        {
+          "Id": "knob-07",
+          "Label": "Ch 15 Pan",
+          "Midi": {
+            "Kind": "ControlChange",
+            "Channel": 1,
+            "Number": 7
+          },
+          "Mixer": {
+            "OscAddress": "/ch/15/mix/pan",
+            "ValueKind": "Pan"
+          }
+        },
+        {
+          "Id": "knob-08",
+          "Label": "Ch 16 Pan",
+          "Midi": {
+            "Kind": "ControlChange",
+            "Channel": 1,
+            "Number": 8
+          },
+          "Mixer": {
+            "OscAddress": "/ch/16/mix/pan",
+            "ValueKind": "Pan"
+          }
+        },
+        {
+          "Id": "knob-09",
+          "Label": "Main mix 9-16 Knob 9",
+          "Midi": {
+            "Kind": "ControlChange",
+            "Channel": 1,
+            "Number": 9
+          },
+          "Mixer": null
+        },
+        {
+          "Id": "knob-10",
+          "Label": "Main mix 9-16 Knob 10",
+          "Midi": {
+            "Kind": "ControlChange",
+            "Channel": 1,
+            "Number": 10
+          },
+          "Mixer": null
+        },
+        {
+          "Id": "knob-11",
+          "Label": "Main mix 9-16 Knob 11",
+          "Midi": {
+            "Kind": "ControlChange",
+            "Channel": 1,
+            "Number": 11
+          },
+          "Mixer": null
+        },
+        {
+          "Id": "knob-12",
+          "Label": "Main mix 9-16 Knob 12",
+          "Midi": {
+            "Kind": "ControlChange",
+            "Channel": 1,
+            "Number": 12
+          },
+          "Mixer": null
+        },
+        {
+          "Id": "knob-13",
+          "Label": "Main mix 9-16 Knob 13",
+          "Midi": {
+            "Kind": "ControlChange",
+            "Channel": 1,
+            "Number": 13
+          },
+          "Mixer": null
+        },
+        {
+          "Id": "knob-14",
+          "Label": "Main mix 9-16 Knob 14",
+          "Midi": {
+            "Kind": "ControlChange",
+            "Channel": 1,
+            "Number": 14
+          },
+          "Mixer": null
+        },
+        {
+          "Id": "knob-15",
+          "Label": "Main mix 9-16 Knob 15",
+          "Midi": {
+            "Kind": "ControlChange",
+            "Channel": 1,
+            "Number": 15
+          },
+          "Mixer": null
+        },
+        {
+          "Id": "knob-16",
+          "Label": "Main mix 9-16 Knob 16",
+          "Midi": {
+            "Kind": "ControlChange",
+            "Channel": 1,
+            "Number": 16
+          },
+          "Mixer": null
+        },
+        {
+          "Id": "knob-17",
+          "Label": "Main mix 9-16 Knob 17",
+          "Midi": {
+            "Kind": "ControlChange",
+            "Channel": 1,
+            "Number": 17
+          },
+          "Mixer": null
+        },
+        {
+          "Id": "knob-18",
+          "Label": "Main mix 9-16 Knob 18",
+          "Midi": {
+            "Kind": "ControlChange",
+            "Channel": 1,
+            "Number": 18
+          },
+          "Mixer": null
+        },
+        {
+          "Id": "knob-19",
+          "Label": "Main mix 9-16 Knob 19",
+          "Midi": {
+            "Kind": "ControlChange",
+            "Channel": 1,
+            "Number": 19
+          },
+          "Mixer": null
+        },
+        {
+          "Id": "knob-20",
+          "Label": "Main mix 9-16 Knob 20",
+          "Midi": {
+            "Kind": "ControlChange",
+            "Channel": 1,
+            "Number": 20
+          },
+          "Mixer": null
+        },
+        {
+          "Id": "knob-21",
+          "Label": "Main mix 9-16 Knob 21",
+          "Midi": {
+            "Kind": "ControlChange",
+            "Channel": 1,
+            "Number": 21
+          },
+          "Mixer": null
+        },
+        {
+          "Id": "knob-22",
+          "Label": "Main mix 9-16 Knob 22",
+          "Midi": {
+            "Kind": "ControlChange",
+            "Channel": 1,
+            "Number": 22
+          },
+          "Mixer": null
+        },
+        {
+          "Id": "knob-23",
+          "Label": "Main mix 9-16 Knob 23",
+          "Midi": {
+            "Kind": "ControlChange",
+            "Channel": 1,
+            "Number": 23
+          },
+          "Mixer": null
+        },
+        {
+          "Id": "knob-24",
+          "Label": "Main mix 9-16 Knob 24",
+          "Midi": {
+            "Kind": "ControlChange",
+            "Channel": 1,
+            "Number": 24
+          },
+          "Mixer": null
+        },
+        {
+          "Id": "fader-01",
+          "Label": "Main LR",
+          "Midi": {
+            "Kind": "ControlChange",
+            "Channel": 1,
+            "Number": 25
+          },
+          "Mixer": {
+            "OscAddress": "/lr/mix/fader",
+            "ValueKind": "Level"
+          }
+        },
+        {
+          "Id": "fader-02",
+          "Label": "Ch 9 Level",
+          "Midi": {
+            "Kind": "ControlChange",
+            "Channel": 1,
+            "Number": 26
+          },
+          "Mixer": {
+            "OscAddress": "/ch/09/mix/fader",
+            "ValueKind": "Level"
+          }
+        },
+        {
+          "Id": "fader-03",
+          "Label": "Ch 10 Level",
+          "Midi": {
+            "Kind": "ControlChange",
+            "Channel": 1,
+            "Number": 27
+          },
+          "Mixer": {
+            "OscAddress": "/ch/10/mix/fader",
+            "ValueKind": "Level"
+          }
+        },
+        {
+          "Id": "fader-04",
+          "Label": "Ch 11 Level",
+          "Midi": {
+            "Kind": "ControlChange",
+            "Channel": 1,
+            "Number": 28
+          },
+          "Mixer": {
+            "OscAddress": "/ch/11/mix/fader",
+            "ValueKind": "Level"
+          }
+        },
+        {
+          "Id": "fader-05",
+          "Label": "Ch 12 Level",
+          "Midi": {
+            "Kind": "ControlChange",
+            "Channel": 1,
+            "Number": 29
+          },
+          "Mixer": {
+            "OscAddress": "/ch/12/mix/fader",
+            "ValueKind": "Level"
+          }
+        },
+        {
+          "Id": "fader-06",
+          "Label": "Ch 13 Level",
+          "Midi": {
+            "Kind": "ControlChange",
+            "Channel": 1,
+            "Number": 30
+          },
+          "Mixer": {
+            "OscAddress": "/ch/13/mix/fader",
+            "ValueKind": "Level"
+          }
+        },
+        {
+          "Id": "fader-07",
+          "Label": "Ch 14 Level",
+          "Midi": {
+            "Kind": "ControlChange",
+            "Channel": 1,
+            "Number": 31
+          },
+          "Mixer": {
+            "OscAddress": "/ch/14/mix/fader",
+            "ValueKind": "Level"
+          }
+        },
+        {
+          "Id": "fader-08",
+          "Label": "Ch 15 Level",
+          "Midi": {
+            "Kind": "ControlChange",
+            "Channel": 1,
+            "Number": 32
+          },
+          "Mixer": {
+            "OscAddress": "/ch/15/mix/fader",
+            "ValueKind": "Level"
+          }
+        },
+        {
+          "Id": "fader-09",
+          "Label": "Ch 16 Level",
+          "Midi": {
+            "Kind": "ControlChange",
+            "Channel": 1,
+            "Number": 33
+          },
+          "Mixer": {
+            "OscAddress": "/ch/16/mix/fader",
+            "ValueKind": "Level"
+          }
+        },
+        {
+          "Id": "bank-prev",
+          "Label": "BANK L",
+          "Midi": {
+            "Kind": "ControlChange",
+            "Channel": 1,
+            "Number": 34
+          },
+          "Mixer": null
+        },
+        {
+          "Id": "bank-next",
+          "Label": "BANK R",
+          "Midi": {
+            "Kind": "ControlChange",
+            "Channel": 1,
+            "Number": 35
+          },
+          "Mixer": null
+        },
+        {
+          "Id": "solo",
+          "Label": "Clear Solo",
+          "Midi": {
+            "Kind": "ControlChange",
+            "Channel": 1,
+            "Number": 36
+          },
+          "Mixer": {
+            "OscAddress": "/-stat/solo",
+            "ValueKind": "Action"
+          }
+        },
+        {
+          "Id": "send-all",
+          "Label": "Main Mute",
+          "Midi": {
+            "Kind": "ControlChange",
+            "Channel": 1,
+            "Number": 37
+          },
+          "Mixer": {
+            "OscAddress": "/lr/mix/on",
+            "ValueKind": "Toggle"
+          }
+        },
+        {
+          "Id": "button-01",
+          "Label": "Ch 9 Mute",
+          "Midi": {
+            "Kind": "ControlChange",
+            "Channel": 1,
+            "Number": 38
+          },
+          "Mixer": {
+            "OscAddress": "/ch/09/mix/on",
+            "ValueKind": "Toggle"
+          }
+        },
+        {
+          "Id": "button-02",
+          "Label": "Ch 10 Mute",
+          "Midi": {
+            "Kind": "ControlChange",
+            "Channel": 1,
+            "Number": 39
+          },
+          "Mixer": {
+            "OscAddress": "/ch/10/mix/on",
+            "ValueKind": "Toggle"
+          }
+        },
+        {
+          "Id": "button-03",
+          "Label": "Ch 11 Mute",
+          "Midi": {
+            "Kind": "ControlChange",
+            "Channel": 1,
+            "Number": 40
+          },
+          "Mixer": {
+            "OscAddress": "/ch/11/mix/on",
+            "ValueKind": "Toggle"
+          }
+        },
+        {
+          "Id": "button-04",
+          "Label": "Ch 12 Mute",
+          "Midi": {
+            "Kind": "ControlChange",
+            "Channel": 1,
+            "Number": 41
+          },
+          "Mixer": {
+            "OscAddress": "/ch/12/mix/on",
+            "ValueKind": "Toggle"
+          }
+        },
+        {
+          "Id": "button-05",
+          "Label": "Ch 13 Mute",
+          "Midi": {
+            "Kind": "ControlChange",
+            "Channel": 1,
+            "Number": 42
+          },
+          "Mixer": {
+            "OscAddress": "/ch/13/mix/on",
+            "ValueKind": "Toggle"
+          }
+        },
+        {
+          "Id": "button-06",
+          "Label": "Ch 14 Mute",
+          "Midi": {
+            "Kind": "ControlChange",
+            "Channel": 1,
+            "Number": 43
+          },
+          "Mixer": {
+            "OscAddress": "/ch/14/mix/on",
+            "ValueKind": "Toggle"
+          }
+        },
+        {
+          "Id": "button-07",
+          "Label": "Ch 15 Mute",
+          "Midi": {
+            "Kind": "ControlChange",
+            "Channel": 1,
+            "Number": 44
+          },
+          "Mixer": {
+            "OscAddress": "/ch/15/mix/on",
+            "ValueKind": "Toggle"
+          }
+        },
+        {
+          "Id": "button-08",
+          "Label": "Ch 16 Mute",
+          "Midi": {
+            "Kind": "ControlChange",
+            "Channel": 1,
+            "Number": 45
+          },
+          "Mixer": {
+            "OscAddress": "/ch/16/mix/on",
+            "ValueKind": "Toggle"
+          }
+        },
+        {
+          "Id": "button-09",
+          "Label": "Ch 9 Solo",
+          "Midi": {
+            "Kind": "ControlChange",
+            "Channel": 1,
+            "Number": 46
+          },
+          "Mixer": {
+            "OscAddress": "/-stat/solosw/09",
+            "ValueKind": "Toggle"
+          }
+        },
+        {
+          "Id": "button-10",
+          "Label": "Ch 10 Solo",
+          "Midi": {
+            "Kind": "ControlChange",
+            "Channel": 1,
+            "Number": 47
+          },
+          "Mixer": {
+            "OscAddress": "/-stat/solosw/10",
+            "ValueKind": "Toggle"
+          }
+        },
+        {
+          "Id": "button-11",
+          "Label": "Ch 11 Solo",
+          "Midi": {
+            "Kind": "ControlChange",
+            "Channel": 1,
+            "Number": 48
+          },
+          "Mixer": {
+            "OscAddress": "/-stat/solosw/11",
+            "ValueKind": "Toggle"
+          }
+        },
+        {
+          "Id": "button-12",
+          "Label": "Ch 12 Solo",
+          "Midi": {
+            "Kind": "ControlChange",
+            "Channel": 1,
+            "Number": 49
+          },
+          "Mixer": {
+            "OscAddress": "/-stat/solosw/12",
+            "ValueKind": "Toggle"
+          }
+        },
+        {
+          "Id": "button-13",
+          "Label": "Ch 13 Solo",
+          "Midi": {
+            "Kind": "ControlChange",
+            "Channel": 1,
+            "Number": 50
+          },
+          "Mixer": {
+            "OscAddress": "/-stat/solosw/13",
+            "ValueKind": "Toggle"
+          }
+        },
+        {
+          "Id": "button-14",
+          "Label": "Ch 14 Solo",
+          "Midi": {
+            "Kind": "ControlChange",
+            "Channel": 1,
+            "Number": 51
+          },
+          "Mixer": {
+            "OscAddress": "/-stat/solosw/14",
+            "ValueKind": "Toggle"
+          }
+        },
+        {
+          "Id": "button-15",
+          "Label": "Ch 15 Solo",
+          "Midi": {
+            "Kind": "ControlChange",
+            "Channel": 1,
+            "Number": 52
+          },
+          "Mixer": {
+            "OscAddress": "/-stat/solosw/15",
+            "ValueKind": "Toggle"
+          }
+        },
+        {
+          "Id": "button-16",
+          "Label": "Ch 16 Solo",
+          "Midi": {
+            "Kind": "ControlChange",
+            "Channel": 1,
+            "Number": 53
+          },
+          "Mixer": {
+            "OscAddress": "/-stat/solosw/16",
+            "ValueKind": "Toggle"
+          }
+        }
+      ]
+    },
+    {
+      "Index": 2,
+      "Name": "Monitors",
+      "Color": {
+        "Red": 255,
+        "Green": 255,
         "Blue": 0
       },
       "Slots": [
@@ -1330,10 +1952,10 @@
       ]
     },
     {
-      "Index": 2,
+      "Index": 3,
       "Name": "FX",
       "Color": {
-        "Red": 255,
+        "Red": 0,
         "Green": 255,
         "Blue": 0
       },
@@ -1997,12 +2619,12 @@
       ]
     },
     {
-      "Index": 3,
+      "Index": 4,
       "Name": "Dynamics/EQ",
       "Color": {
         "Red": 0,
         "Green": 255,
-        "Blue": 0
+        "Blue": 255
       },
       "Slots": [
         {
@@ -2691,11 +3313,11 @@
       ]
     },
     {
-      "Index": 4,
+      "Index": 5,
       "Name": "Utility/Safety",
       "Color": {
         "Red": 0,
-        "Green": 255,
+        "Green": 0,
         "Blue": 255
       },
       "Slots": [
@@ -3289,10 +3911,10 @@
       ]
     },
     {
-      "Index": 5,
+      "Index": 6,
       "Name": "Custom 1",
       "Color": {
-        "Red": 0,
+        "Red": 139,
         "Green": 0,
         "Blue": 255
       },
@@ -3830,10 +4452,10 @@
       ]
     },
     {
-      "Index": 6,
+      "Index": 7,
       "Name": "Custom 2",
       "Color": {
-        "Red": 139,
+        "Red": 255,
         "Green": 0,
         "Blue": 255
       },

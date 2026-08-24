@@ -164,7 +164,8 @@ bank list
 
 Prints all 7 banks. The default map uses these bank names:
 
-- Main mix
+- Main mix 1-8
+- Main mix 9-16
 - Monitors
 - FX
 - Dynamics/EQ

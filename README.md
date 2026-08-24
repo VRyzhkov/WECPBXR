@@ -84,12 +84,13 @@ The `slot: none` label means that no assignable control is currently selected. C
 
 ## Default Banks
 
-The bundled map contains five ready-to-use live-sound banks and two spare banks:
+The bundled map contains six ready-to-use live-sound banks and two spare banks:
 
-- `Main mix` - Main LR, channel 1-8 faders, channel pan, channel mute, channel solo, clear solo, and main mute.
+- `Main mix 1-8` - Main LR, channel 1-8 faders, channel pan, channel mute, channel solo, clear solo, and main mute.
+- `Main mix 9-16` - Main LR, channel 9-16 faders, channel pan, channel mute, channel solo, clear solo, and main mute.
 - `Monitors` - Main LR, bus 1-6 masters, bus mutes, and channel 1-8 sends to bus 1-3.
 - `FX` - FX return levels, FX send masters, channel 1-8 sends to FX 1-3, FX return mutes, tap tempo, and FX mute group.
-- `Dynamics/EQ` - Channel 1-8 compressor thresholds, EQ gain controls, HPF toggles, compressor toggles, clear solo, and mute group 1.
+- `Dynamics/EQ` - Channel 1-8 compressor thresholds, EQ gain controls, HPF toggles, compressor toggles, clear solo, and mute group 1. HPF means high-pass filter: it removes low-frequency rumble below the selected cutoff.
 - `Utility/Safety` - Mute groups, clear solo, tap tempo, snapshot previous/next, snapshot 1-4 load buttons, main mute, bus mutes, and FX mute group.
 - `Custom 1` and `Custom 2` - spare banks with MIDI bindings already assigned but no mixer OSC functions.
 
@@ -234,12 +235,13 @@ dotnet run --project WECPBXR.Console
 
 ## Банки по умолчанию
 
-В комплектной карте есть пять готовых банков для живой работы и два запасных банка:
+В комплектной карте есть шесть готовых банков для живой работы и два запасных банка:
 
-- `Main mix` - Main LR, фейдеры каналов 1-8, панорама каналов, mute, solo, clear solo и main mute.
+- `Main mix 1-8` - Main LR, фейдеры каналов 1-8, панорама каналов, mute, solo, clear solo и main mute.
+- `Main mix 9-16` - Main LR, фейдеры каналов 9-16, панорама каналов, mute, solo, clear solo и main mute.
 - `Monitors` - Main LR, мастера bus 1-6, mute для bus и посылы каналов 1-8 на bus 1-3.
 - `FX` - уровни FX return, мастера FX send, посылы каналов 1-8 на FX 1-3, mute FX return, tap tempo и FX mute group.
-- `Dynamics/EQ` - compressor threshold каналов 1-8, усиление полос EQ, HPF on/off, compressor on/off, clear solo и mute group 1.
+- `Dynamics/EQ` - compressor threshold каналов 1-8, усиление полос EQ, HPF on/off, compressor on/off, clear solo и mute group 1. HPF - это high-pass filter, то есть фильтр верхних частот: он срезает низкочастотный гул ниже выбранной частоты.
 - `Utility/Safety` - mute groups, clear solo, tap tempo, snapshot previous/next, загрузка snapshots 1-4, main mute, bus mute и FX mute group.
 - `Custom 1` и `Custom 2` - запасные банки с готовыми MIDI-привязками, но без назначенных OSC-функций микшера.
 

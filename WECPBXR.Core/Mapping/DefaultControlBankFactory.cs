@@ -4,7 +4,7 @@ namespace WECPBXR.Core.Mapping;
 
 public static class DefaultControlBankFactory
 {
-    public const int DefaultBankCount = 7;
+    public const int DefaultBankCount = 8;
     public const int KnobCount = 24;
     public const int FaderCount = 9;
     public const int AssignableButtonCount = 20;
@@ -14,13 +14,14 @@ public static class DefaultControlBankFactory
 
     private static readonly (string Name, RgbColor Color)[] DefaultBanks =
     [
-        ("Main mix", new RgbColor(255, 0, 0)),
-        ("Monitors", new RgbColor(255, 127, 0)),
-        ("FX", new RgbColor(255, 255, 0)),
-        ("Dynamics/EQ", new RgbColor(0, 255, 0)),
-        ("Utility/Safety", new RgbColor(0, 255, 255)),
-        ("Custom 1", new RgbColor(0, 0, 255)),
-        ("Custom 2", new RgbColor(139, 0, 255))
+        ("Main mix 1-8", new RgbColor(255, 0, 0)),
+        ("Main mix 9-16", new RgbColor(255, 127, 0)),
+        ("Monitors", new RgbColor(255, 255, 0)),
+        ("FX", new RgbColor(0, 255, 0)),
+        ("Dynamics/EQ", new RgbColor(0, 255, 255)),
+        ("Utility/Safety", new RgbColor(0, 0, 255)),
+        ("Custom 1", new RgbColor(139, 0, 255)),
+        ("Custom 2", new RgbColor(255, 0, 255))
     ];
 
     public static BankSet CreateDefaultBankSet()
@@ -105,42 +106,43 @@ public static class DefaultControlBankFactory
         switch (bank.Index)
         {
             case 0:
-                ConfigureMainMixBank(bank);
+                ConfigureMainMixBank(bank, firstChannel: 1);
                 break;
 
             case 1:
-                ConfigureMonitorsBank(bank);
+                ConfigureMainMixBank(bank, firstChannel: 9);
                 break;
 
             case 2:
-                ConfigureFxBank(bank);
+                ConfigureMonitorsBank(bank);
                 break;
 
             case 3:
-                ConfigureDynamicsEqBank(bank);
+                ConfigureFxBank(bank);
                 break;
 
             case 4:
+                ConfigureDynamicsEqBank(bank);
+                break;
+
+            case 5:
                 ConfigureUtilitySafetyBank(bank);
                 break;
         }
     }
 
-    private static void ConfigureMainMixBank(ControlBank bank)
+    private static void ConfigureMainMixBank(ControlBank bank, int firstChannel)
     {
         Assign(bank, "fader-01", "Main LR", "master");
 
-        for (int channel = 1; channel <= 8; channel++)
+        for (int offset = 0; offset < 8; offset++)
         {
-            Assign(bank, Id("fader", channel + 1), $"Ch {channel} Level", "main", channel);
-            Assign(bank, Id("knob", channel), $"Ch {channel} Pan", "pan", channel);
-            Assign(bank, Id("button", channel), $"Ch {channel} Mute", "mute", channel);
-            Assign(bank, Id("button", channel + 8), $"Ch {channel} Solo", "solo", channel);
-        }
-
-        for (int channel = 9; channel <= 16; channel++)
-        {
-            Assign(bank, Id("knob", channel), $"Ch {channel} Pan", "pan", channel);
+            int channel = firstChannel + offset;
+            int controlNumber = offset + 1;
+            Assign(bank, Id("fader", controlNumber + 1), $"Ch {channel} Level", "main", channel);
+            Assign(bank, Id("knob", controlNumber), $"Ch {channel} Pan", "pan", channel);
+            Assign(bank, Id("button", controlNumber), $"Ch {channel} Mute", "mute", channel);
+            Assign(bank, Id("button", controlNumber + 8), $"Ch {channel} Solo", "solo", channel);
         }
 
         Assign(bank, "solo", "Clear Solo", "clear-solo");
