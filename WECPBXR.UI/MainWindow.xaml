@@ -330,8 +330,8 @@
                 <TextBox Text="{Binding MixerAddress, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
                          ToolTip="{Binding MixerStatus}"
                          Style="{StaticResource PanelTextBoxStyle}" />
-                <Button Content="X+" Command="{Binding ConnectMixerCommand}" ToolTip="Connect to XR18" Style="{StaticResource PanelButtonStyle}" Margin="0,0,6,0" />
-                <Button Content="X-" Command="{Binding DisconnectMixerCommand}" ToolTip="Disconnect from XR18" Style="{StaticResource PanelButtonStyle}" Margin="0,0,10,0" />
+                <Button Content="X+" Command="{Binding ConnectMixerCommand}" ToolTip="Connect to XR" Style="{StaticResource PanelButtonStyle}" Margin="0,0,6,0" />
+                <Button Content="X-" Command="{Binding DisconnectMixerCommand}" ToolTip="Disconnect from XR" Style="{StaticResource PanelButtonStyle}" Margin="0,0,10,0" />
                 <Button Content="Pull" Command="{Binding RequestMixerValuesCommand}" ToolTip="Request current values for assigned OSC addresses" Style="{StaticResource PanelButtonStyle}" Margin="0,0,10,0" />
                 <Ellipse Width="9" Height="9" Fill="{Binding MidiIndicatorBrush}" VerticalAlignment="Center" Margin="0,0,5,0" />
                 <ComboBox ItemsSource="{Binding MidiDevices}"
@@ -364,7 +364,7 @@
                           Style="{StaticResource PanelComboBoxStyle}"
                           Width="86" />
                 <TextBox Text="{Binding AssignmentChannel, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"
-                         ToolTip="XR18 channel 1-18"
+                         ToolTip="XR channel 1-18"
                          Style="{StaticResource PanelTextBoxStyle}"
                          Width="34" />
                 <TextBox Text="{Binding AssignmentIndex, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}"

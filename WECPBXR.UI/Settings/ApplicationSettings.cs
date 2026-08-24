@@ -2,14 +2,14 @@ namespace WECPBXR.UI.Settings;
 
 public sealed class ApplicationSettings
 {
-    public Xr18ApplicationSettings XR18 { get; set; } = new();
+    public XrApplicationSettings XR { get; set; } = new();
 
     public MidiApplicationSettings MIDI { get; set; } = new();
 
     public MapApplicationSettings Map { get; set; } = new();
 }
 
-public sealed class Xr18ApplicationSettings
+public sealed class XrApplicationSettings
 {
     public string Address { get; set; } = "192.168.1.100";
 

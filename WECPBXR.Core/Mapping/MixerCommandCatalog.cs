@@ -11,7 +11,7 @@ public sealed class MixerCommandCatalog
         MixerCommandDefinition[] commands =
         [
             new("main", "Input channel main LR fader", MixerValueKind.Level, null, null, "/ch/{channel:00}/mix/fader"),
-            new("mute", "Input channel mute. XR18 OSC uses /mix/on: 0 means muted, 1 means unmuted", MixerValueKind.Toggle, null, null, "/ch/{channel:00}/mix/on"),
+            new("mute", "Input channel mute. XR OSC uses /mix/on: 0 means muted, 1 means unmuted", MixerValueKind.Toggle, null, null, "/ch/{channel:00}/mix/on"),
             new("pan", "Input channel pan", MixerValueKind.Pan, null, null, "/ch/{channel:00}/mix/pan"),
             new("solo", "Input channel solo/PFL switch", MixerValueKind.Toggle, null, null, "/-stat/solosw/{channel:00}"),
             new("gain", "Input channel preamp gain. Verify scaling on hardware before live use", MixerValueKind.Level, null, null, "/ch/{channel:00}/preamp/gain", 1, 16),
@@ -27,7 +27,7 @@ public sealed class MixerCommandCatalog
             new("eq-highmid", "Input channel EQ band 3 gain", MixerValueKind.Level, null, null, "/ch/{channel:00}/eq/3/g", 1, 16),
             new("eq-high", "Input channel EQ band 4 gain", MixerValueKind.Level, null, null, "/ch/{channel:00}/eq/4/g", 1, 16),
             new("bus", "Input channel send level to bus 1-6", MixerValueKind.Level, 1, 6, "/ch/{channel:00}/mix/{index:00}/level"),
-            new("aux", "Alias for bus 1-6, normally routed to XR18 AUX outputs", MixerValueKind.Level, 1, 6, "/ch/{channel:00}/mix/{index:00}/level"),
+            new("aux", "Alias for bus 1-6, normally routed to XR AUX outputs", MixerValueKind.Level, 1, 6, "/ch/{channel:00}/mix/{index:00}/level"),
             new("fx", "Input channel send level to FX 1-4. Uses send indexes 7-10 until verified on hardware", MixerValueKind.Level, 1, 4, "/ch/{channel:00}/mix/{fxSendIndex:00}/level"),
             new("bus-on", "Input channel send on/off to bus 1-6", MixerValueKind.Toggle, 1, 6, "/ch/{channel:00}/mix/{index:00}/on"),
             new("fx-on", "Input channel send on/off to FX 1-4. Uses send indexes 7-10 until verified on hardware", MixerValueKind.Toggle, 1, 4, "/ch/{channel:00}/mix/{fxSendIndex:00}/on"),

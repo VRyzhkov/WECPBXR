@@ -33,7 +33,7 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
     private Brush _bankTextBrush = Brushes.Black;
     private string _status = "Ready";
     private string _mixerAddress = "192.168.1.100";
-    private string _mixerStatus = "XR18: disconnected";
+    private string _mixerStatus = "XR: disconnected";
     private string _midiStatus = "MIDI: disconnected";
     private bool _isAssignmentMode;
     private bool _isLearningMidi;
@@ -62,9 +62,9 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         _settingsStore = new ApplicationSettingsStore();
         _settings = _settingsStore.Load();
 
-        if (!string.IsNullOrWhiteSpace(_settings.XR18.Address))
+        if (!string.IsNullOrWhiteSpace(_settings.XR.Address))
         {
-            _mixerAddress = _settings.XR18.Address;
+            _mixerAddress = _settings.XR.Address;
         }
 
         _mappingEngine.BankChanged += (_, _) => RefreshCurrentBank();
@@ -320,7 +320,7 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
             ConnectMidi();
         }
 
-        if (_settings.XR18.AutoConnect)
+        if (_settings.XR.AutoConnect)
         {
             await ConnectMixerAsync().ConfigureAwait(true);
         }
@@ -595,7 +595,7 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
     {
         if (_mixer is null)
         {
-            SetStatus("XR18 pull: mixer is not connected.");
+            SetStatus("XR pull: mixer is not connected.");
             return;
         }
 
@@ -612,11 +612,11 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
                 await _mixer.RequestOscValueAsync(address).ConfigureAwait(true);
             }
 
-            SetStatus($"XR18 pull: requested {addresses.Length} value(s).");
+            SetStatus($"XR pull: requested {addresses.Length} value(s).");
         }
         catch (Exception exception)
         {
-            SetStatus($"XR18 pull failed: {exception.Message}");
+            SetStatus($"XR pull failed: {exception.Message}");
         }
     }
 
@@ -690,7 +690,7 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
     {
         if (string.IsNullOrWhiteSpace(MixerAddress))
         {
-            MixerStatus = "XR18: enter address";
+            MixerStatus = "XR: enter address";
             MixerIndicatorBrush = Brushes.DarkOrange;
             AddLog(MixerStatus);
             return;
@@ -703,18 +703,18 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
 
         try
         {
-            MixerStatus = $"XR18: connecting {MixerAddress.Trim()}";
+            MixerStatus = $"XR: connecting {MixerAddress.Trim()}";
             MixerIndicatorBrush = Brushes.DarkOrange;
             AddLog(MixerStatus);
             await mixer.StartAsync().ConfigureAwait(true);
             _mixer = mixer;
-            MixerStatus = $"XR18: connected {MixerAddress.Trim()}";
+            MixerStatus = $"XR: connected {MixerAddress.Trim()}";
             MixerIndicatorBrush = Brushes.LimeGreen;
-            _settings.XR18.Address = MixerAddress.Trim();
+            _settings.XR.Address = MixerAddress.Trim();
             SaveSettings();
             AddLog(MixerStatus);
 
-            if (_settings.XR18.PullOnConnect)
+            if (_settings.XR.PullOnConnect)
             {
                 await RequestMixerValuesAsync().ConfigureAwait(true);
             }
@@ -723,7 +723,7 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         {
             mixer.MessageReceived -= OnMixerMessageReceived;
             await mixer.DisposeAsync().ConfigureAwait(true);
-            MixerStatus = $"XR18: {exception.Message}";
+            MixerStatus = $"XR: {exception.Message}";
             MixerIndicatorBrush = Brushes.DarkOrange;
             AddLog(MixerStatus);
         }
@@ -733,7 +733,7 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
     {
         if (_mixer is null)
         {
-            MixerStatus = "XR18: disconnected";
+            MixerStatus = "XR: disconnected";
             return;
         }
 
@@ -741,7 +741,7 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         _mixer = null;
         mixer.MessageReceived -= OnMixerMessageReceived;
         await mixer.DisposeAsync().ConfigureAwait(true);
-        MixerStatus = "XR18: disconnected";
+        MixerStatus = "XR: disconnected";
         MixerIndicatorBrush = Brushes.DimGray;
         AddLog(MixerStatus);
     }
@@ -884,7 +884,7 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
             }
             catch (Exception exception)
             {
-                RunOnUiThread(() => MixerStatus = $"XR18 send: {exception.Message}");
+                RunOnUiThread(() => MixerStatus = $"XR send: {exception.Message}");
             }
         }
     }
@@ -908,8 +908,8 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         {
             RunOnUiThread(() =>
             {
-                MixerStatus = FormattableString.Invariant($"XR18: {change.OscAddress}={change.Value:0.###}");
-                Status = DescribeResult("XR18", result);
+                MixerStatus = FormattableString.Invariant($"XR: {change.OscAddress}={change.Value:0.###}");
+                Status = DescribeResult("XR", result);
                 AddLog(Status);
             });
         }

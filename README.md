@@ -5,7 +5,7 @@
 
 WECPBXR is a Windows application for controlling Behringer XR series digital mixers over Ethernet with a Miwayer Worlde Easycontrol Plus MIDI controller. It translates incoming MIDI messages into XR-compatible OSC commands, keeps the software control state synchronized with mixer values, and provides an editable MIDI-to-mixer map for practical live sound workflows.
 
-The project targets Behringer XR12, XR16, and XR18 mixers. Most current UI labels and diagnostics mention XR18 because that is the primary development and test target.
+The project targets Behringer XR-series mixers. UI labels and diagnostics use the general XR name because these mappings target the full XR family.
 
 ## Main Features
 
@@ -37,7 +37,7 @@ The project targets Behringer XR12, XR16, and XR18 mixers. Most current UI label
 
 - Windows.
 - .NET 8 SDK for building from source.
-- A Behringer XR12, XR16, or XR18 mixer reachable on the local network.
+- A Behringer XR-series mixer reachable on the local network.
 - A Miwayer Worlde Easycontrol Plus MIDI controller, or another MIDI controller with a compatible/custom map.
 - Network access to the mixer on UDP port `10024`.
 
@@ -93,7 +93,7 @@ The bundled map contains five ready-to-use live-sound banks and two spare banks:
 - `Utility/Safety` - Mute groups, clear solo, tap tempo, snapshot previous/next, snapshot 1-4 load buttons, main mute, bus mutes, and FX mute group.
 - `Custom 1` and `Custom 2` - spare banks with MIDI bindings already assigned but no mixer OSC functions.
 
-Snapshot and tap-tempo OSC commands are included as practical utility actions, but they should be verified on your XR18 before using them in a live show.
+Snapshot and tap-tempo OSC commands are included as practical utility actions, but they should be verified on your XR mixer before using them in a live show.
 
 ## MIDI Controller Setup
 
@@ -155,7 +155,7 @@ Thank you for your support.
 
 WECPBXR - это Windows-приложение для управления цифровыми микшерами Behringer серии XR по Ethernet с помощью MIDI-контроллера Miwayer Worlde Easycontrol Plus. Программа преобразует входящие MIDI-сообщения в OSC-команды, понятные микшеру XR, синхронизирует состояние программных контролов со значениями микшера и позволяет редактировать карту соответствий между MIDI-контроллером и функциями микшера.
 
-Проект рассчитан на Behringer XR12, XR16 и XR18. В текущем интерфейсе и диагностике часто используется название XR18, потому что это основная модель для разработки и тестирования.
+Проект рассчитан на микшеры Behringer серии XR. В интерфейсе и диагностике используется общее название XR, потому что назначения рассчитаны на всё семейство XR.
 
 ## Основной функционал
 
@@ -187,7 +187,7 @@ WECPBXR - это Windows-приложение для управления циф
 
 - Windows.
 - .NET 8 SDK для сборки из исходников.
-- Микшер Behringer XR12, XR16 или XR18, доступный в локальной сети.
+- Микшер Behringer серии XR, доступный в локальной сети.
 - MIDI-контроллер Miwayer Worlde Easycontrol Plus или другой MIDI-контроллер с совместимой/настроенной картой.
 - Сетевой доступ к микшеру по UDP-порту `10024`.
 
@@ -243,7 +243,7 @@ dotnet run --project WECPBXR.Console
 - `Utility/Safety` - mute groups, clear solo, tap tempo, snapshot previous/next, загрузка snapshots 1-4, main mute, bus mute и FX mute group.
 - `Custom 1` и `Custom 2` - запасные банки с готовыми MIDI-привязками, но без назначенных OSC-функций микшера.
 
-OSC-команды для snapshots и tap tempo добавлены как практичные служебные действия, но их нужно проверить на вашем XR18 до использования на живом выступлении.
+OSC-команды для snapshots и tap tempo добавлены как практичные служебные действия, но их нужно проверить на вашем XR-микшере до использования на живом выступлении.
 
 ## Настройка MIDI-контроллера
 

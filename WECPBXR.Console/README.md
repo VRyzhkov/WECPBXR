@@ -10,13 +10,13 @@ From the repository root:
 dotnet run --project WECPBXR.Console
 ```
 
-The app starts without connecting to XR18 or MIDI devices. It automatically tries to load the default MIDI/OSC map and then prints the command list.
+The app starts without connecting to XR or MIDI devices. It automatically tries to load the default MIDI/OSC map and then prints the command list.
 
 To reload the default MIDI/OSC map manually, run `map load`.
 
 ## Mixer Connection
 
-Connect to XR18 by address:
+Connect to XR by address:
 
 ```text
 mixer connect 192.168.1.100
@@ -31,7 +31,7 @@ mixer connect
 Then type an address or run discovery:
 
 ```text
-XR18 address or scan: scan
+XR address or scan: scan
 ```
 
 If mixers are found, select one by number.
@@ -42,19 +42,19 @@ If mixers are found, select one by number.
 mixer connect [address]
 ```
 
-Connects to XR18. Without an address, the app asks for one in the console.
+Connects to XR. Without an address, the app asks for one in the console.
 
 ```text
 mixer disconnect
 ```
 
-Disconnects the current XR18 connection.
+Disconnects the current XR connection.
 
 ```text
 mixer status
 ```
 
-Prints current XR18 connection status.
+Prints current XR connection status.
 
 ```text
 mixer scan
@@ -74,7 +74,7 @@ After mixer connection, incoming OSC messages are printed to the console and num
 mute <1-18>
 ```
 
-Mutes the selected XR18 input channel.
+Mutes the selected XR input channel.
 
 Example:
 
@@ -86,7 +86,7 @@ mute 1
 unmute <1-18>
 ```
 
-Unmutes the selected XR18 input channel.
+Unmutes the selected XR input channel.
 
 Example:
 
@@ -105,7 +105,7 @@ midi connect <index>
 ```
 
 Connects to a MIDI input device and starts printing incoming MIDI events.
-Mapped MIDI events are converted by Core into OSC-ready mixer commands. If XR18 is connected, the console sends those commands immediately; if XR18 is not connected, it only prints the command that would be sent.
+Mapped MIDI events are converted by Core into OSC-ready mixer commands. If XR is connected, the console sends those commands immediately; if XR is not connected, it only prints the command that would be sent.
 
 Example:
 
@@ -310,7 +310,7 @@ map set osc fader-01 /ch/01/mix/fader level
 map set command <slotId> <main|mute|pan|bus|aux|fx|bus-on|fx-on> <channel> [index]
 ```
 
-Assigns a predefined XR18 command.
+Assigns a predefined XR command.
 
 Examples:
 
@@ -334,7 +334,7 @@ Clears MIDI or mixer binding.
 map commands
 ```
 
-Prints the predefined XR18 command catalog.
+Prints the predefined XR command catalog.
 
 ```text
 sim midi <cc|note|noteoff|pitch> <channel> <number> <0-127>
@@ -349,7 +349,7 @@ sim midi cc 1 26 80
 sim midi note 1 34 127
 ```
 
-If the simulated control is mapped and unlocked, the console prints `OSC ready` with the generated OSC address and value. Simulation never sends to XR18.
+If the simulated control is mapped and unlocked, the console prints `OSC ready` with the generated OSC address and value. Simulation never sends to XR.
 
 ```text
 sim mixer <oscAddress> <0.0-1.0>
@@ -376,7 +376,7 @@ Mute buttons use `ToggleByPress` behavior by default for `Toggle` mixer bindings
 
 - press events toggle the current mixer value;
 - release events are ignored;
-- XR18 `/ch/NN/mix/on` is inverted from the word "mute": `1` means channel on, `0` means muted.
+- XR `/ch/NN/mix/on` is inverted from the word "mute": `1` means channel on, `0` means muted.
 
 No-hardware mute check:
 
@@ -414,19 +414,19 @@ quit   same as exit
 
 ## Notes
 
-- XR18 OSC uses UDP port `10024`.
+- XR OSC uses UDP port `10024`.
 - The app sends `/xremote` when connected and repeats it every 5 seconds.
 - MIDI diagnostics use `Melanchall.DryWetMidi`.
 - MIDI input events are printed as raw DryWetMIDI event text. Internally the hardware layer also normalizes Control Change, Note On, Note Off, and Pitch Bend events for future mapping logic.
 - Core currently uses a provisional default MIDI map: knobs and faders are sequential Control Change values, assignable buttons are sequential Note values. Real Worlde mappings should be adjusted after checking `midi connect <index>` logs.
 - Core stores an RGB color per bank. Sending that color to the physical Easycontrol bank buttons is not implemented yet because the controller-specific MIDI/SysEx protocol for button RGB is still unknown.
-- `sim` commands do not send anything to XR18 or a MIDI device. They only exercise Core mapping state inside the console app.
+- `sim` commands do not send anything to XR or a MIDI device. They only exercise Core mapping state inside the console app.
 - Core is now responsible for generating outgoing OSC commands from mapped controller changes. The hardware layer only sends the already generated OSC address/value.
 - Continuous controls (`level`, `pan`) use soft takeover: Core sends OSC only after both controller and mixer values are known and close enough to unlock the slot.
 - Toggle controls use `ToggleByPress`: Core reacts only to press events, reads the current mixer value, inverts it, and generates one OSC command. Release events are ignored.
-- XR18 command catalog currently includes channel main fader, mute, pan, bus/aux send level, FX send level, bus send on/off, and FX send on/off.
-- On XR18/X-Air, AUX outputs are normally fed by bus sends. The `aux` command is therefore an alias for bus sends 1-6.
+- XR command catalog currently includes channel main fader, mute, pan, bus/aux send level, FX send level, bus send on/off, and FX send on/off.
+- On XR/X-Air, AUX outputs are normally fed by bus sends. The `aux` command is therefore an alias for bus sends 1-6.
 - FX send commands currently assume FX sends use send indexes 7-10 (`FX 1` -> `/ch/NN/mix/07/level`). This should be verified on hardware.
-- For buttons, the safest first assignments are `mute`, `bus-on`, and `fx-on`. Later candidates: solo, tap tempo, mute groups, or selected-channel actions, but only after confirming their XR18 OSC addresses and whether the controller buttons behave as momentary or toggle controls.
+- For buttons, the safest first assignments are `mute`, `bus-on`, and `fx-on`. Later candidates: solo, tap tempo, mute groups, or selected-channel actions, but only after confirming their XR OSC addresses and whether the controller buttons behave as momentary or toggle controls.
 - Windows Firewall can block incoming UDP responses. If scanning or live updates do not work, check firewall permissions for the console app.
 - The current scanner is intentionally simple: it searches only local `/24` subnet(s), not arbitrary routed networks.

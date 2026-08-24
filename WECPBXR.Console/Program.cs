@@ -191,7 +191,7 @@ static async Task<string> GetMixerAddressAsync(BXrNetworkScanner scanner, string
 
     while (true)
     {
-        Console.Write("XR18 address or scan: ");
+        Console.Write("XR address or scan: ");
         string? address = Console.ReadLine();
 
         if (string.IsNullOrWhiteSpace(address))
@@ -228,13 +228,13 @@ static async Task<string> GetMixerAddressAsync(BXrNetworkScanner scanner, string
 
 static async Task<IReadOnlyList<BXrDiscoveredMixer>> PrintScanResultsAsync(BXrNetworkScanner scanner)
 {
-    Console.WriteLine("Scanning local /24 subnet(s) for XR18 /xinfo responses...");
+    Console.WriteLine("Scanning local /24 subnet(s) for XR /xinfo responses...");
 
     IReadOnlyList<BXrDiscoveredMixer> mixers = await BXrNetworkScanner.ScanAsync();
 
     if (mixers.Count == 0)
     {
-        Console.WriteLine("No XR18 responses found.");
+        Console.WriteLine("No XR responses found.");
         return mixers;
     }
 
@@ -302,7 +302,7 @@ static async Task<(BXrMixerClient? Mixer, string? Address)> HandleMixerCommandAs
                 }
             };
 
-            Console.WriteLine($"Connecting to XR18 at {mixerAddress}:{BXrConnectionSettings.DefaultOscPort}...");
+            Console.WriteLine($"Connecting to XR at {mixerAddress}:{BXrConnectionSettings.DefaultOscPort}...");
 
             try
             {
@@ -594,7 +594,7 @@ static void SetMapValue(MidiMapEditor mapEditor, MappingEngine mappingEngine, st
             }
 
             string commandKey = parts[4];
-            int channel = ReadInt(parts[5], "XR18 channel");
+            int channel = ReadInt(parts[5], "XR channel");
             int? index = parts.Length >= 7 ? ReadInt(parts[6], "command index") : null;
             mapEditor.AssignMixerCommand(bankIndex, slotId, commandKey, channel, index);
             break;
@@ -1103,8 +1103,8 @@ static void PrintMixerHelp()
 {
     Console.WriteLine();
     Console.WriteLine("Mixer commands:");
-    Console.WriteLine("  mixer connect [address]  Connect XR18. Without address, ask in console");
-    Console.WriteLine("  mixer disconnect         Disconnect XR18");
+    Console.WriteLine("  mixer connect [address]  Connect XR. Without address, ask in console");
+    Console.WriteLine("  mixer disconnect         Disconnect XR");
     Console.WriteLine("  mixer status             Show mixer connection status");
     Console.WriteLine("  mixer scan               Search local /24 subnet(s)");
     Console.WriteLine("  mixer help               Show mixer commands");
@@ -1166,9 +1166,9 @@ static void PrintHelp()
 {
     Console.WriteLine();
     Console.WriteLine("Commands:");
-    Console.WriteLine("  mixer connect [address]  Connect XR18");
-    Console.WriteLine("  mixer disconnect         Disconnect XR18");
-    Console.WriteLine("  mixer status             Show XR18 connection status");
+    Console.WriteLine("  mixer connect [address]  Connect XR");
+    Console.WriteLine("  mixer disconnect         Disconnect XR");
+    Console.WriteLine("  mixer status             Show XR connection status");
     Console.WriteLine("  mixer scan               Search local /24 subnet(s)");
     Console.WriteLine("  scan                     Same as mixer scan");
     Console.WriteLine("  mute <1-18>              Mute channel, requires connected mixer");
