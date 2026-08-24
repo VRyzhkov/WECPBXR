@@ -25,6 +25,7 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
     private readonly ApplicationSettingsStore _settingsStore;
     private readonly ApplicationSettings _settings;
     private readonly Dictionary<string, ControlSlotViewModel> _slotLookup = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, MixerAssignment> _assignmentLookup;
     private readonly object _mappingLock = new();
 
     private string _bankTitle = string.Empty;
@@ -61,6 +62,7 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         _midi = new MidiInputManager();
         _settingsStore = new ApplicationSettingsStore();
         _settings = _settingsStore.Load();
+        _assignmentLookup = BuildAssignmentLookup(_mapEditor.CommandCatalog);
 
         if (!string.IsNullOrWhiteSpace(_settings.XR.Address))
         {
@@ -1085,37 +1087,45 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
 
     private bool TryResolveAssignment(MixerBinding binding, out MixerAssignment? assignment)
     {
-        foreach (MixerCommandDefinition command in _mapEditor.CommandCatalog.Commands.OrderBy(command => command.Key))
-        {
-            foreach (int channel in Enumerable.Range(1, 18))
-            {
-                IEnumerable<int?> indexes = GetCandidateIndexes(command);
+        return _assignmentLookup.TryGetValue(CreateAssignmentLookupKey(binding), out assignment);
+    }
 
-                foreach (int? index in indexes)
+    private static Dictionary<string, MixerAssignment> BuildAssignmentLookup(MixerCommandCatalog commandCatalog)
+    {
+        Dictionary<string, MixerAssignment> lookup = new(StringComparer.OrdinalIgnoreCase);
+
+        foreach (MixerCommandDefinition command in commandCatalog.Commands)
+        {
+            IEnumerable<int> channels = command.AddressPattern.Contains("{channel", StringComparison.Ordinal)
+                ? Enumerable.Range(command.MinChannel, command.MaxChannel - command.MinChannel + 1)
+                : [command.MinChannel];
+
+            foreach (int channel in channels)
+            {
+                foreach (int? index in GetCandidateIndexes(command))
                 {
-                    MixerBinding candidate;
+                    MixerBinding binding;
 
                     try
                     {
-                        candidate = _mapEditor.CommandCatalog.CreateBinding(command.Key, channel, index);
+                        binding = commandCatalog.CreateBinding(command.Key, channel, index);
                     }
                     catch
                     {
                         continue;
                     }
 
-                    if (candidate.ValueKind == binding.ValueKind &&
-                        string.Equals(candidate.OscAddress, binding.OscAddress, StringComparison.OrdinalIgnoreCase))
-                    {
-                        assignment = new MixerAssignment(command.Key, channel, index);
-                        return true;
-                    }
+                    lookup.TryAdd(CreateAssignmentLookupKey(binding), new MixerAssignment(command.Key, channel, index));
                 }
             }
         }
 
-        assignment = null;
-        return false;
+        return lookup;
+    }
+
+    private static string CreateAssignmentLookupKey(MixerBinding binding)
+    {
+        return $"{binding.ValueKind}:{binding.OscAddress}";
     }
 
     private static IEnumerable<int?> GetCandidateIndexes(MixerCommandDefinition command)
