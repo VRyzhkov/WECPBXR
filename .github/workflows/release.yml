@@ -1,4 +1,4 @@
-name: Publish Windows Release
+name: Publish Release
 
 on:
   push:
@@ -7,7 +7,6 @@ on:
 
 jobs:
   build:
-    # Для сборки WPF/Windows-приложений нужна Windows-машина
     runs-on: windows-latest 
     permissions:
       contents: write
@@ -21,29 +20,49 @@ jobs:
       with:
         dotnet-version: '8.0.x'
 
-    # 1. Публикация графической версии (UI)
-    - name: Publish UI Application
+    - name: Read version from tag
+      shell: pwsh
       run: |
-        dotnet publish WECPBXR.UI/WECPBXR.UI.csproj -c Release -r win-x64 --self-contained false -o ./publish/WECPBXR_UI
+        $version = "${{ github.ref_name }}"
+        if ($version.StartsWith("v")) {
+          $version = $version.Substring(1)
+        }
+        "WECPBXR_VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Append
+        "WECPBXR_INFORMATIONAL_VERSION=${{ github.ref_name }}" | Out-File -FilePath $env:GITHUB_ENV -Append
 
-    # 2. Публикация консольной версии (Console)
+    # 1. Публикация графической версии (UI) под Windows
+    - name: Publish UI Windows
+      shell: pwsh
+      run: |
+        dotnet publish WECPBXR.UI/WECPBXR.UI.csproj -c Release -r win-x64 --self-contained true -o ./publish/WECPBXR_UI_win-x64 -p:Version=$env:WECPBXR_VERSION -p:InformationalVersion=$env:WECPBXR_INFORMATIONAL_VERSION
+
+    # 2. Публикация графической версии (UI) под Linux
+    - name: Publish UI Linux
+      shell: pwsh
+      run: |
+        dotnet publish WECPBXR.UI/WECPBXR.UI.csproj -c Release -r linux-x64 --self-contained true -o ./publish/WECPBXR_UI_linux-x64 -p:Version=$env:WECPBXR_VERSION -p:InformationalVersion=$env:WECPBXR_INFORMATIONAL_VERSION
+
+    # 3. Публикация консольной версии (Console)
     - name: Publish Console Application
+      shell: pwsh
       run: |
-        dotnet publish WECPBXR.Console/WECPBXR.Console.csproj -c Release -r win-x64 --self-contained false -o ./publish/WECPBXR_Console
+        dotnet publish WECPBXR.Console/WECPBXR.Console.csproj -c Release -r win-x64 --self-contained true -o ./publish/WECPBXR_Console_win-x64 -p:Version=$env:WECPBXR_VERSION -p:InformationalVersion=$env:WECPBXR_INFORMATIONAL_VERSION
 
-    # 3. Упаковка в ZIP-архивы с помощью встроенного в Windows PowerShell командлета
+    # 4. Упаковка артефактов
     - name: Zip Artifacts
       shell: pwsh
       run: |
-        Compress-Archive -Path ./publish/WECPBXR_UI/* -DestinationPath ./WECPBXR-UI-win-x64.zip
-        Compress-Archive -Path ./publish/WECPBXR_Console/* -DestinationPath ./WECPBXR-Console-win-x64.zip
+        Compress-Archive -Path ./publish/WECPBXR_UI_win-x64/* -DestinationPath ./WECPBXR-UI-win-x64.zip
+        tar -czf ./WECPBXR-UI-linux-x64.tar.gz -C ./publish/WECPBXR_UI_linux-x64 .
+        Compress-Archive -Path ./publish/WECPBXR_Console_win-x64/* -DestinationPath ./WECPBXR-Console-win-x64.zip
 
-    # 4. Создание релиза на GitHub
+    # 5. Создание релиза на GitHub
     - name: Create GitHub Release
       uses: softprops/action-gh-release@v2
       with:
         files: |
           WECPBXR-UI-win-x64.zip
+          WECPBXR-UI-linux-x64.tar.gz
           WECPBXR-Console-win-x64.zip
         generate_release_notes: true
         prerelease: true # Автоматически ставит отметку Pre-release (Бета)
