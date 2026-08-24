@@ -1,4 +1,4 @@
-# WECPBXR18.Console
+# WECPBXR.Console
 
 Diagnostic console application for checking MIDI controller input and OSC communication with Behringer XR series before the WPF UI is ready.
 
@@ -7,7 +7,7 @@ Diagnostic console application for checking MIDI controller input and OSC commun
 From the repository root:
 
 ```powershell
-dotnet run --project WECPBXR18.Console
+dotnet run --project WECPBXR.Console
 ```
 
 The app starts without connecting to XR18 or MIDI devices. It automatically tries to load the default MIDI/OSC map and then prints the command list.
@@ -227,7 +227,7 @@ map save [path]
 Saves the current MIDI/OSC map to JSON. Default path:
 
 ```text
-WECPBXR18.Console/midi-map.json
+WECPBXR.Console/midi-map.json
 ```
 
 ```text
@@ -239,7 +239,7 @@ Loads MIDI/OSC map from JSON and applies it to the current Core bank set.
 Without a path, loads the current default map path. On startup, the default path is `midi-map.json` from the application output directory. During development, if the file was not copied to output, the app falls back to the project file:
 
 ```text
-WECPBXR18.Console/midi-map.json
+WECPBXR.Console/midi-map.json
 ```
 
 ```text

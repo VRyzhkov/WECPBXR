@@ -1,50 +1,235 @@
-> [!WARNING]
-> **Attention:** This is a beta version of the software and is currently undergoing active testing!
-
-This software is designed to control **Behringer XR series** digital mixers (*XR12, XR16, XR18*) over Ethernet using the **Miwayer Worlde Easycontrol Plus** MIDI controller.
+# WECPBXR
 
 > [!WARNING]
-> **Внимание:** Это бета-версия программы, в данный момент она находится на этапе активного тестирования!
+> WECPBXR is beta software and is still being tested with real MIDI controllers and Behringer XR mixers.
 
-Программа предназначена для управления цифровыми микшерными пультами **Behringer серии XR** (*XR12, XR16, XR18*) по протоколу Ethernet с помощью MIDI-контроллера **Miwayer Worlde Easycontrol Plus**.
+WECPBXR is a Windows application for controlling Behringer XR series digital mixers over Ethernet with a Miwayer Worlde Easycontrol Plus MIDI controller. It translates incoming MIDI messages into XR-compatible OSC commands, keeps the software control state synchronized with mixer values, and provides an editable MIDI-to-mixer map for practical live sound workflows.
 
-## 🤝 Обратная связь и участие
+The project targets Behringer XR12, XR16, and XR18 mixers. Most current UI labels and diagnostics mention XR18 because that is the primary development and test target.
 
-- **Нашли баг?** Пожалуйста, создайте [Issue](https://github.com/VRyzhkov/WECPBXR/issues), подробно описав проблему.
-- **Есть идеи по улучшению?** Будем рады вашим предложениям в разделе Issues или готовым Pull Requests!
+## Main Features
 
-# Руководство по контрибьютингу
+- WPF desktop interface styled after the Easycontrol Plus surface.
+- OSC communication with Behringer XR mixers over UDP port `10024`.
+- MIDI input support through `Melanchall.DryWetMidi`.
+- Automatic or manual connection to a selected MIDI input device.
+- Manual mixer connection by IP address, with optional pull of current mixer values.
+- Editable mapping between physical controls and mixer functions.
+- Seven software banks with independent names, colors, labels, and assignments.
+- Support for 24 knobs, 9 faders, 16 assignable buttons, and bank navigation controls.
+- Built-in command catalog for channel level, mute, pan, bus sends, AUX aliases, FX sends, and send on/off commands.
+- Soft takeover for continuous controls, so a fader or knob starts sending only after it catches the current mixer value.
+- Toggle-by-press behavior for button mappings such as channel mute.
+- Live visual feedback for controller values, mixer values, selected bank, MIDI status, mixer status, and recent log messages.
+- Assignment mode for changing mixer bindings directly in the UI.
+- MIDI learn mode for assigning the next physical controller event to the selected software control.
+- Map validation for missing OSC bindings, unknown OSC bindings, and duplicate MIDI assignments.
+- Diagnostic console application for scanning mixers, testing MIDI input, editing maps, and simulating MIDI or mixer events without the WPF UI.
 
-Спасибо, что решили помочь развитию проекта! 
+## Solution Structure
 
-### Как предложить изменения:
-1. Сделайте Fork репозитория.
-2. Создайте свою ветку (`git checkout -b feature/AmazingFeature`).
-3. Протестируйте изменения локально на вашем микшере XR и контроллере Miwayer.
-4. Сделайте Pull Request в ветку `main`.
+- `WECPBXR.UI` - WPF desktop application and user settings.
+- `WECPBXR.Console` - diagnostic console utility for hardware checks and map editing.
+- `WECPBXR.Core` - bank model, mapping engine, MIDI/OSC map configuration, mixer command catalog, and soft-takeover logic.
+- `WECPBXR.Hardware` - MIDI input handling, OSC mixer client, and local network scanner.
 
-### Как сообщить о баге:
-Откройте [Issue](https://github.com/VRyzhkov/WECPBXR/issues) и подробно опишите проблему, указав модель вашего пульта (XR12/16/18) и шаги для воспроизведения бага.
+## Requirements
 
-## Enforcement (Применение правил)
+- Windows.
+- .NET 8 SDK for building from source.
+- A Behringer XR12, XR16, or XR18 mixer reachable on the local network.
+- A Miwayer Worlde Easycontrol Plus MIDI controller, or another MIDI controller with a compatible/custom map.
+- Network access to the mixer on UDP port `10024`.
 
-Instances of abusive, harassing, or otherwise unacceptable behavior may be 
-reported to the project team at **46427038+VRyzhkov@users.noreply.github.com**.
-All complaints will be reviewed and investigated promptly and fairly.
+Windows Firewall can block incoming UDP responses from the mixer. If discovery or live updates do not work, check firewall permissions for the application.
 
+## Build
 
-## ❤️ Support the Project
+From the repository root:
 
-If this project saved your time or helped you in any way, feel free to buy the author a coffee:
+```powershell
+dotnet build WECPBXR.slnx
+```
 
-[![Donate](https://shields.io)](https://pay.cloudtips.ru/p/c7151242)
+Run the WPF application:
 
-*Thank you so much for your generosity!*
+```powershell
+dotnet run --project WECPBXR.UI
+```
 
-## ❤️ Поддержать проект
+Run the diagnostic console:
 
-Если этот проект сэкономил вам время или оказался полезным, вы можете угостить автора кофе:
+```powershell
+dotnet run --project WECPBXR.Console
+```
 
-[![Donate](https://shields.io)](https://pay.cloudtips.ru/p/c7151242)
+## Basic Workflow
 
-*Большое спасибо за вашу поддержку!*
+1. Connect the computer, MIDI controller, and mixer to the required USB/network setup.
+2. Start `WECPBXR.UI`.
+3. Enter the mixer IP address, for example `192.168.1.100`.
+4. Click `X+` to connect to the mixer.
+5. Select a MIDI input device and click `M+`.
+6. Click `Pull` to request current values for assigned OSC addresses.
+7. Move a fader, knob, or button on the MIDI controller.
+8. If a continuous control is locked by soft takeover, move it until it reaches the current mixer value; after that, WECPBXR starts sending OSC changes.
+
+## Mapping
+
+The default map is stored in `WECPBXR.Console/midi-map.json` and is copied into the UI output as `midi-map.json`. The map contains bank definitions, control labels, MIDI bindings, and mixer OSC bindings.
+
+In the WPF UI, use `Assign` to enter assignment mode. Select a control, choose a command, set channel and index values, then click `Set`. Use `Learn` to bind the selected software control to the next incoming MIDI event. Use `Save` to write the updated map.
+
+Supported command keys include:
+
+- `main` - input channel main LR fader.
+- `mute` - input channel on/off state, presented as mute control.
+- `pan` - input channel pan.
+- `bus` - input channel send level to bus 1-6.
+- `aux` - alias for bus 1-6, commonly used for AUX output workflows.
+- `fx` - input channel send level to FX 1-4.
+- `bus-on` - input channel send on/off to bus 1-6.
+- `fx-on` - input channel send on/off to FX 1-4.
+
+The diagnostic console exposes additional map commands such as `map list`, `map show`, `map set`, `map clear`, `map save`, and `map commands`.
+
+## Current Limitations
+
+- The project is in beta and should be tested carefully before use in production live sound scenarios.
+- Physical RGB feedback for Easycontrol Plus bank buttons is not implemented yet because the controller-specific protocol is not confirmed.
+- FX send OSC indexes are currently based on the expected XR/X-Air send layout and should be verified on real hardware.
+- The scanner searches local IPv4 `/24` subnet ranges only.
+- `Rug.Osc` currently restores as a .NET Framework package and produces NuGet compatibility warnings during build, although the solution builds successfully.
+
+## Feedback and Contributions
+
+Bug reports and feature ideas are welcome in [GitHub Issues](https://github.com/VRyzhkov/WECPBXR/issues). When reporting a hardware problem, include the mixer model, controller model, operating system, connection method, and steps to reproduce the issue.
+
+Pull requests are welcome. Please test changes locally, especially when they affect MIDI input, OSC output, mapping behavior, or live mixer state.
+
+## Support
+
+If this project saved your time or helped your setup, you can support the author here:
+
+[Donate](https://pay.cloudtips.ru/p/c7151242)
+
+Thank you for your support.
+
+---
+
+# WECPBXR
+
+> [!WARNING]
+> WECPBXR - бета-версия программы. Она ещё проходит проверку с реальными MIDI-контроллерами и микшерами Behringer XR.
+
+WECPBXR - это Windows-приложение для управления цифровыми микшерами Behringer серии XR по Ethernet с помощью MIDI-контроллера Miwayer Worlde Easycontrol Plus. Программа преобразует входящие MIDI-сообщения в OSC-команды, понятные микшеру XR, синхронизирует состояние программных контролов со значениями микшера и позволяет редактировать карту соответствий между MIDI-контроллером и функциями микшера.
+
+Проект рассчитан на Behringer XR12, XR16 и XR18. В текущем интерфейсе и диагностике часто используется название XR18, потому что это основная модель для разработки и тестирования.
+
+## Основной функционал
+
+- WPF-интерфейс, визуально повторяющий рабочую поверхность Easycontrol Plus.
+- Обмен OSC-сообщениями с микшерами Behringer XR по UDP-порту `10024`.
+- Работа с MIDI-входом через `Melanchall.DryWetMidi`.
+- Ручное или автоматическое подключение к выбранному MIDI-устройству.
+- Подключение к микшеру по IP-адресу и запрос текущих значений микшера.
+- Редактируемая карта соответствий между физическими контролами и функциями микшера.
+- Семь программных банков с отдельными названиями, цветами, подписями и назначениями.
+- Поддержка 24 энкодеров, 9 фейдеров, 16 назначаемых кнопок и кнопок переключения банков.
+- Встроенный каталог команд для уровня канала, mute, panorama, посылов на bus, AUX-алиасов, FX-посылов и включения/выключения посылов.
+- Soft takeover для плавных контролов: фейдер или энкодер начинает отправлять изменения только после того, как догонит текущее значение микшера.
+- Поведение toggle-by-press для кнопок, например для mute.
+- Живая индикация значений контроллера, значений микшера, текущего банка, MIDI-статуса, статуса микшера и последних сообщений журнала.
+- Режим назначения функций прямо в интерфейсе.
+- MIDI learn: назначение следующего физического MIDI-события на выбранный программный контрол.
+- Проверка карты на отсутствующие OSC-назначения, неизвестные OSC-адреса и дублирующиеся MIDI-назначения.
+- Диагностическая консоль для поиска микшеров, проверки MIDI-входа, редактирования карты и симуляции MIDI/OSC-событий без WPF-интерфейса.
+
+## Структура решения
+
+- `WECPBXR.UI` - WPF-приложение и пользовательские настройки.
+- `WECPBXR.Console` - диагностическая консоль для проверки оборудования и редактирования карты.
+- `WECPBXR.Core` - модель банков, движок маппинга, конфигурация MIDI/OSC-карты, каталог команд микшера и логика soft takeover.
+- `WECPBXR.Hardware` - работа с MIDI-входом, OSC-клиент микшера и сканер локальной сети.
+
+## Требования
+
+- Windows.
+- .NET 8 SDK для сборки из исходников.
+- Микшер Behringer XR12, XR16 или XR18, доступный в локальной сети.
+- MIDI-контроллер Miwayer Worlde Easycontrol Plus или другой MIDI-контроллер с совместимой/настроенной картой.
+- Сетевой доступ к микшеру по UDP-порту `10024`.
+
+Windows Firewall может блокировать входящие UDP-ответы от микшера. Если поиск устройств или живое обновление значений не работает, проверьте разрешения firewall для приложения.
+
+## Сборка и запуск
+
+Из корня репозитория:
+
+```powershell
+dotnet build WECPBXR.slnx
+```
+
+Запуск WPF-приложения:
+
+```powershell
+dotnet run --project WECPBXR.UI
+```
+
+Запуск диагностической консоли:
+
+```powershell
+dotnet run --project WECPBXR.Console
+```
+
+## Базовый сценарий работы
+
+1. Подключите компьютер, MIDI-контроллер и микшер к нужной USB/сетевой схеме.
+2. Запустите `WECPBXR.UI`.
+3. Укажите IP-адрес микшера, например `192.168.1.100`.
+4. Нажмите `X+`, чтобы подключиться к микшеру.
+5. Выберите MIDI-вход и нажмите `M+`.
+6. Нажмите `Pull`, чтобы запросить текущие значения назначенных OSC-адресов.
+7. Двигайте фейдер, энкодер или кнопку на MIDI-контроллере.
+8. Если плавный контрол заблокирован soft takeover, двигайте его до текущего значения микшера; после совпадения WECPBXR начнёт отправлять OSC-изменения.
+
+## Карта назначений
+
+Карта по умолчанию хранится в `WECPBXR.Console/midi-map.json` и копируется в выходную папку UI как `midi-map.json`. В карте описаны банки, подписи контролов, MIDI-привязки и OSC-привязки микшера.
+
+В WPF-интерфейсе нажмите `Assign`, чтобы перейти в режим назначения. Выберите контрол, укажите команду, канал и индекс, затем нажмите `Set`. Кнопка `Learn` назначает выбранному программному контролу следующее входящее MIDI-событие. Кнопка `Save` сохраняет обновлённую карту.
+
+Поддерживаемые ключи команд:
+
+- `main` - основной LR-фейдер входного канала.
+- `mute` - состояние включения канала, представленное как mute.
+- `pan` - панорама входного канала.
+- `bus` - уровень посыла входного канала на bus 1-6.
+- `aux` - алиас для bus 1-6, удобный для сценариев с AUX-выходами.
+- `fx` - уровень посыла входного канала на FX 1-4.
+- `bus-on` - включение/выключение посыла входного канала на bus 1-6.
+- `fx-on` - включение/выключение посыла входного канала на FX 1-4.
+
+Диагностическая консоль дополнительно поддерживает команды `map list`, `map show`, `map set`, `map clear`, `map save` и `map commands`.
+
+## Текущие ограничения
+
+- Проект находится в бета-стадии, поэтому перед использованием на реальном мероприятии его нужно внимательно проверить на вашем оборудовании.
+- Физическая RGB-индикация кнопок банков Easycontrol Plus пока не реализована, потому что протокол контроллера ещё не подтверждён.
+- OSC-индексы FX-посылов сейчас основаны на ожидаемой структуре XR/X-Air и требуют проверки на реальном микшере.
+- Сканер ищет устройства только в локальных IPv4-подсетях `/24`.
+- `Rug.Osc` восстанавливается как .NET Framework-пакет и даёт NuGet-предупреждения совместимости при сборке, хотя решение собирается успешно.
+
+## Обратная связь и участие
+
+Баги и идеи по развитию можно оставлять в [GitHub Issues](https://github.com/VRyzhkov/WECPBXR/issues). Если сообщаете о проблеме с оборудованием, укажите модель микшера, модель контроллера, операционную систему, способ подключения и шаги для воспроизведения.
+
+Pull Request'ы приветствуются. Пожалуйста, проверяйте изменения локально, особенно если они затрагивают MIDI-вход, OSC-выход, логику маппинга или живое состояние микшера.
+
+## Поддержать проект
+
+Если проект сэкономил вам время или помог в настройке, вы можете поддержать автора:
+
+[Donate](https://pay.cloudtips.ru/p/c7151242)
+
+Спасибо за поддержку.
