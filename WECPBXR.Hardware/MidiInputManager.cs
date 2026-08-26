@@ -1,152 +1,64 @@
-using Melanchall.DryWetMidi.Core;
-using Melanchall.DryWetMidi.Multimedia;
+using System.Runtime.InteropServices;
 
 namespace WECPBXR.Hardware;
 
 public sealed class MidiInputManager : IDisposable
 {
-    private InputDevice? _inputDevice;
-    private bool _disposed;
+    private readonly IMidiInputBackend _backend;
+
+    public MidiInputManager()
+    {
+        _backend = RuntimeInformation.IsOSPlatform(OSPlatform.Linux)
+            ? new AlsaMidiInputBackend()
+            : new DryWetMidiInputBackend();
+
+        _backend.ControlChanged += OnControlChanged;
+        _backend.RawEventReceived += OnRawEventReceived;
+    }
 
     public event EventHandler<MidiControlChangedEventArgs>? ControlChanged;
 
     public event EventHandler<MidiRawEventReceivedEventArgs>? RawEventReceived;
 
-    public string? ConnectedDeviceName => _inputDevice?.Name;
+    public string? ConnectedDeviceName => _backend.ConnectedDeviceName;
 
-    public bool IsConnected => _inputDevice is not null;
+    public bool IsConnected => _backend.IsConnected;
 
     public IReadOnlyList<MidiInputDeviceInfo> GetInputDevices()
     {
-        ThrowIfDisposed();
-
-        return [.. InputDevice.GetAll().Select((device, index) => new MidiInputDeviceInfo(index, device.Name))];
+        return _backend.GetInputDevices();
     }
 
     public void ConnectByIndex(int index)
     {
-        ThrowIfDisposed();
-        Disconnect();
-
-        InputDevice device = InputDevice.GetByIndex(index);
-        Connect(device);
+        _backend.ConnectByIndex(index);
     }
 
     public void ConnectByName(string deviceName)
     {
-        ThrowIfDisposed();
-
-        if (string.IsNullOrWhiteSpace(deviceName))
-        {
-            throw new ArgumentException("MIDI device name is required.", nameof(deviceName));
-        }
-
-        Disconnect();
-
-        InputDevice device = InputDevice.GetByName(deviceName);
-        Connect(device);
+        _backend.ConnectByName(deviceName);
     }
 
     public void Disconnect()
     {
-        if (_inputDevice is null)
-        {
-            return;
-        }
-
-        _inputDevice.EventReceived -= OnEventReceived;
-
-        if (_inputDevice.IsListeningForEvents)
-        {
-            _inputDevice.StopEventsListening();
-        }
-
-        _inputDevice.Dispose();
-        _inputDevice = null;
+        _backend.Disconnect();
     }
 
     public void Dispose()
     {
-        if (_disposed)
-        {
-            return;
-        }
-
-        Disconnect();
-        _disposed = true;
+        _backend.ControlChanged -= OnControlChanged;
+        _backend.RawEventReceived -= OnRawEventReceived;
+        _backend.Dispose();
         GC.SuppressFinalize(this);
     }
 
-    private void Connect(InputDevice device)
+    private void OnControlChanged(object? sender, MidiControlChangedEventArgs eventArgs)
     {
-        _inputDevice = device;
-        _inputDevice.EventReceived += OnEventReceived;
-        _inputDevice.StartEventsListening();
+        ControlChanged?.Invoke(this, eventArgs);
     }
 
-    private void OnEventReceived(object? sender, MidiEventReceivedEventArgs eventArgs)
+    private void OnRawEventReceived(object? sender, MidiRawEventReceivedEventArgs eventArgs)
     {
-        string deviceName = ConnectedDeviceName ?? "Unknown MIDI device";
-        string rawEvent = eventArgs.Event.ToString() ?? eventArgs.Event.GetType().Name;
-
-        Console.WriteLine($"MIDI {deviceName}: {rawEvent}");
-        RawEventReceived?.Invoke(this, new MidiRawEventReceivedEventArgs(deviceName, rawEvent));
-
-        MidiControlChange? controlChange = TryCreateControlChange(eventArgs.Event, rawEvent);
-
-        if (controlChange is not null)
-        {
-            ControlChanged?.Invoke(this, new MidiControlChangedEventArgs(controlChange));
-        }
-    }
-
-    private static MidiControlChange? TryCreateControlChange(MidiEvent midiEvent, string rawEvent)
-    {
-        return midiEvent switch
-        {
-            ControlChangeEvent controlChangeEvent => new MidiControlChange(
-                MidiControlKind.ControlChange,
-                GetOneBasedChannel(controlChangeEvent),
-                (int)controlChangeEvent.ControlNumber,
-                (int)controlChangeEvent.ControlValue,
-                (int)controlChangeEvent.ControlValue / 127.0,
-                rawEvent),
-
-            NoteOnEvent noteOnEvent => new MidiControlChange(
-                MidiControlKind.NoteOn,
-                GetOneBasedChannel(noteOnEvent),
-                (int)noteOnEvent.NoteNumber,
-                (int)noteOnEvent.Velocity,
-                (int)noteOnEvent.Velocity / 127.0,
-                rawEvent),
-
-            NoteOffEvent noteOffEvent => new MidiControlChange(
-                MidiControlKind.NoteOff,
-                GetOneBasedChannel(noteOffEvent),
-                (int)noteOffEvent.NoteNumber,
-                (int)noteOffEvent.Velocity,
-                (int)noteOffEvent.Velocity / 127.0,
-                rawEvent),
-
-            PitchBendEvent pitchBendEvent => new MidiControlChange(
-                MidiControlKind.PitchBend,
-                GetOneBasedChannel(pitchBendEvent),
-                number: 0,
-                pitchBendEvent.PitchValue,
-                pitchBendEvent.PitchValue / 16383.0,
-                rawEvent),
-
-            _ => null
-        };
-    }
-
-    private static int GetOneBasedChannel(ChannelEvent channelEvent)
-    {
-        return (int)channelEvent.Channel + 1;
-    }
-
-    private void ThrowIfDisposed()
-    {
-        ObjectDisposedException.ThrowIf(_disposed, this);
+        RawEventReceived?.Invoke(this, eventArgs);
     }
 }

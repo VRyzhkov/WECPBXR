@@ -44,6 +44,21 @@ The project targets Behringer XR-series mixers. UI labels and diagnostics use th
 
 Windows Firewall can block incoming UDP responses from the mixer. On Linux, local firewall rules or missing MIDI permissions can cause similar symptoms. If discovery, MIDI input, or live updates do not work, check OS permissions and firewall settings.
 
+On Linux, MIDI input uses ALSA sequencer devices. Install the ALSA runtime/tools and make sure your user can access audio/MIDI devices:
+
+```bash
+sudo apt install alsa-utils libasound2
+sudo usermod -aG audio "$USER"
+```
+
+Log out and back in after changing groups. To verify that the controller is visible before starting WECPBXR:
+
+```bash
+aconnect -l
+aseqdump -l
+aseqdump -p <client>:<port>
+```
+
 ## Build
 
 From the repository root:
@@ -70,6 +85,39 @@ Run the diagnostic console:
 ```powershell
 dotnet run --project WECPBXR.Console
 ```
+
+## Linux Application Menu Shortcut
+
+After publishing a Linux build, copy or unpack the published files into a stable directory, for example `/home/user/opt/WECPBXR`. Then create a desktop entry:
+
+```bash
+mkdir -p ~/.local/share/applications
+nano ~/.local/share/applications/wecpbxr.desktop
+```
+
+Use this content, adjusting `Exec`, `Path`, and `Icon` to your install location and username:
+
+```ini
+[Desktop Entry]
+Type=Application
+Name=WECPBXR
+Comment=Control Behringer XR mixers from a MIDI controller
+Exec=/home/user/opt/WECPBXR/WECPBXR.UI
+Path=/home/user/opt/WECPBXR
+Icon=/home/user/opt/WECPBXR/midi-connector.png
+Terminal=false
+Categories=AudioVideo;Audio;Midi;
+StartupNotify=true
+```
+
+Make the shortcut executable and refresh the desktop menu database:
+
+```bash
+chmod +x ~/.local/share/applications/wecpbxr.desktop
+update-desktop-database ~/.local/share/applications 2>/dev/null || true
+```
+
+If the app was published as a framework-dependent build, use `Exec=dotnet /home/user/opt/WECPBXR/WECPBXR.UI.dll` instead.
 
 ## Basic Workflow
 
@@ -204,6 +252,21 @@ WECPBXR - это кроссплатформенное desktop-приложени
 
 Windows Firewall может блокировать входящие UDP-ответы от микшера. В Linux похожие симптомы могут вызывать правила локального firewall или права доступа к MIDI-устройствам. Если поиск устройств, MIDI-вход или живое обновление значений не работают, проверьте разрешения ОС и настройки firewall.
 
+В Linux MIDI-вход использует ALSA sequencer devices. Установите ALSA runtime/tools и проверьте, что пользователь имеет доступ к audio/MIDI-устройствам:
+
+```bash
+sudo apt install alsa-utils libasound2
+sudo usermod -aG audio "$USER"
+```
+
+После изменения групп выйдите из сессии и зайдите снова. Перед запуском WECPBXR можно проверить, что контроллер виден системе:
+
+```bash
+aconnect -l
+aseqdump -l
+aseqdump -p <client>:<port>
+```
+
 ## Сборка и запуск
 
 Из корня репозитория:
@@ -230,6 +293,39 @@ dotnet publish WECPBXR.UI -c Release -r linux-x64 --self-contained true
 ```powershell
 dotnet run --project WECPBXR.Console
 ```
+
+## Ярлык в меню Linux
+
+После публикации Linux-сборки скопируйте или распакуйте файлы программы в постоянную папку, например `/home/user/opt/WECPBXR`. Затем создайте desktop entry:
+
+```bash
+mkdir -p ~/.local/share/applications
+nano ~/.local/share/applications/wecpbxr.desktop
+```
+
+Вставьте содержимое ниже, поправив `Exec`, `Path` и `Icon` под ваш путь установки и имя пользователя:
+
+```ini
+[Desktop Entry]
+Type=Application
+Name=WECPBXR
+Comment=Control Behringer XR mixers from a MIDI controller
+Exec=/home/user/opt/WECPBXR/WECPBXR.UI
+Path=/home/user/opt/WECPBXR
+Icon=/home/user/opt/WECPBXR/midi-connector.png
+Terminal=false
+Categories=AudioVideo;Audio;Midi;
+StartupNotify=true
+```
+
+Сделайте ярлык исполняемым и обновите базу меню:
+
+```bash
+chmod +x ~/.local/share/applications/wecpbxr.desktop
+update-desktop-database ~/.local/share/applications 2>/dev/null || true
+```
+
+Если программа опубликована как framework-dependent сборка, используйте `Exec=dotnet /home/user/opt/WECPBXR/WECPBXR.UI.dll`.
 
 ## Базовый сценарий работы
 
