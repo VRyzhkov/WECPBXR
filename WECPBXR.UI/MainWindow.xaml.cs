@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.Primitives;
 using Avalonia.Input;
+using Avalonia.Input.Platform;
 using Avalonia.Interactivity;
 using Avalonia.VisualTree;
 using WECPBXR.UI.ViewModels;
@@ -49,6 +50,42 @@ public partial class MainWindow : Window
         {
             _viewModel.HandleSlotClick(slot);
             e.Handled = true;
+        }
+    }
+
+    private async void LogPanel_PointerPressed(object? sender, PointerPressedEventArgs e)
+    {
+        e.Handled = true;
+
+        if (e.ClickCount != 2 || !e.GetCurrentPoint(this).Properties.IsLeftButtonPressed)
+        {
+            return;
+        }
+
+        string logText = _viewModel.GetLogText();
+
+        if (string.IsNullOrWhiteSpace(logText))
+        {
+            _viewModel.NotifyLogCopySkipped();
+            return;
+        }
+
+        var clipboard = TopLevel.GetTopLevel(this)?.Clipboard;
+
+        if (clipboard is null)
+        {
+            _viewModel.NotifyLogCopyFailed("clipboard is not available");
+            return;
+        }
+
+        try
+        {
+            await clipboard.SetTextAsync(logText);
+            _viewModel.NotifyLogCopied();
+        }
+        catch (Exception exception)
+        {
+            _viewModel.NotifyLogCopyFailed(exception.Message);
         }
     }
 

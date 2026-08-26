@@ -351,7 +351,9 @@
               BorderBrush="#59616E"
               BorderThickness="1"
               CornerRadius="4"
-              Padding="6">
+              Padding="6"
+              PointerPressed="LogPanel_PointerPressed"
+              ToolTip.Tip="Double-click to copy the log to clipboard">
         <ScrollViewer VerticalScrollBarVisibility="Auto"
                       HorizontalScrollBarVisibility="Disabled">
           <ItemsControl ItemsSource="{Binding LogEntries}">

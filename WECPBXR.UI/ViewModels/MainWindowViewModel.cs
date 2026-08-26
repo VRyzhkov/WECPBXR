@@ -431,6 +431,26 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         }
     }
 
+    public string GetLogText()
+    {
+        return string.Join(Environment.NewLine, LogEntries);
+    }
+
+    public void NotifyLogCopied()
+    {
+        SetStatus("Log copied to clipboard.");
+    }
+
+    public void NotifyLogCopySkipped()
+    {
+        SetStatus("Log copy skipped: log is empty.");
+    }
+
+    public void NotifyLogCopyFailed(string message)
+    {
+        SetStatus($"Log copy failed: {message}");
+    }
+
     private void ApplyAssignment()
     {
         if (_selectedSlot is null)

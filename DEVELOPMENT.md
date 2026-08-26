@@ -78,6 +78,8 @@ WECPBXR - кроссплатформенное desktop-приложение дл
 - В README добавлены Linux-команды для установки ALSA runtime/tools и проверки контроллера через `aconnect`/`aseqdump`.
 - В README добавлена инструкция создания ярлыка WECPBXR в меню Linux через пользовательский `.desktop` файл.
 - `WECPBXR.Console` теперь также объявляет `linux-x64` в `RuntimeIdentifiers`.
+- В UI добавлено копирование текущего лога в буфер обмена по двойному клику на поле журнала. Используется Avalonia clipboard API через `TopLevel`, поэтому функция рассчитана на Windows и Linux.
+- Во всплывающую подсказку поля журнала добавлена подсказка `Double-click to copy the log to clipboard`.
 
 Проверка:
 
@@ -87,6 +89,7 @@ WECPBXR - кроссплатформенное desktop-приложение дл
 - Проверена документация DryWetMIDI: `InputDevice`/`OutputDevice` из Multimedia API официально доступны только на Windows и macOS; Linux Multimedia API недоступен. Значит Linux Mint может видеть MIDI-события на уровне ALSA, но текущий backend приложения через DryWetMIDI не сможет перечислить или открыть устройство.
 - Выполнено `dotnet build WECPBXR.Hardware/WECPBXR.Hardware.csproj --no-restore`: сборка успешна. Остались внешние предупреждения `NU1900` из-за недоступности NuGet vulnerability feed и `NU1701` по `Rug.Osc`.
 - Полная сборка решения в текущем окружении не прошла из-за `NU1301` при обращении к `https://api.nuget.org/v3/index.json` (SSL/credentials), не из-за новых C#-ошибок.
+- После сетевого `dotnet restore WECPBXR.UI/WECPBXR.UI.csproj` выполнено `dotnet build WECPBXR.UI/WECPBXR.UI.csproj --no-restore`: сборка успешна, остаются только предупреждения `NU1701` по `Rug.Osc`.
 
 Следующие возможные шаги:
 
