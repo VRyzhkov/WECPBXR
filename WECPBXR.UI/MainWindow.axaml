@@ -29,6 +29,7 @@
     <Style Selector="Button.window-control">
       <Setter Property="Width" Value="22" />
       <Setter Property="Height" Value="20" />
+      <Setter Property="Focusable" Value="False" />
       <Setter Property="Foreground" Value="#F5F7FA" />
       <Setter Property="Background" Value="#323842" />
       <Setter Property="BorderBrush" Value="#59616E" />
@@ -316,7 +317,38 @@
         <Button Content="{Binding SaveMapText}" Command="{Binding SaveMapCommand}" ToolTip.Tip="Save current MIDI/OSC map to midi-map.json" Classes="panel" />
       </StackPanel>
 
-      <StackPanel Canvas.Left="842" Canvas.Top="31" Orientation="Horizontal">
+      <StackPanel Canvas.Left="806" Canvas.Top="35" Orientation="Horizontal">
+        <Button x:Name="ScaleButton"
+                Click="ScaleButton_Click"
+                Classes="window-control"
+                Margin="0,0,8,0"
+                ToolTip.Tip="Reduce window size">
+          <Grid Width="14" Height="14">
+            <Path x:Name="ScaleIcon"
+                  Data="M 2 2 L 6 6 M 6 6 L 6 3 M 6 6 L 3 6 M 12 12 L 8 8 M 8 8 L 11 8 M 8 8 L 8 11"
+                  Stroke="#F5F7FA"
+                  StrokeThickness="1.6"
+                  StrokeLineCap="Round"
+                  HorizontalAlignment="Center"
+                  VerticalAlignment="Center" />
+          </Grid>
+        </Button>
+        <Button x:Name="TopmostButton"
+                Click="TopmostButton_Click"
+                Classes="window-control"
+                Margin="0,0,8,0"
+                ToolTip.Tip="Pin window on top">
+          <Grid Width="14" Height="14">
+            <Path x:Name="TopmostPinIcon"
+                  Data="M 5 2 L 9 2 M 7 2 L 7 6 M 4 6 L 10 6 M 5 6 L 3 9 M 9 6 L 11 9 M 4 9 L 10 9 M 7 9 L 7 12"
+                  Stroke="#F5F7FA"
+                  StrokeThickness="1.6"
+                  StrokeLineCap="Round"
+                  RenderTransformOrigin="50%,50%"
+                  HorizontalAlignment="Center"
+                  VerticalAlignment="Center" />
+          </Grid>
+        </Button>
         <Button Click="MinimizeButton_Click"
                 Classes="window-control"
                 Margin="0,0,8,0"
