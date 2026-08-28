@@ -5,10 +5,12 @@ namespace WECPBXR.Core.Mapping;
 
 public sealed class MidiMapEditor(
     BankSet bankSet,
+    string controllerProfileId = ControllerProfileCatalog.DefaultProfileId,
     MidiMapConfigurationStore? store = null,
     MixerCommandCatalog? commandCatalog = null)
 {
     private readonly BankSet _bankSet = bankSet ?? throw new ArgumentNullException(nameof(bankSet));
+    private readonly string _controllerProfileId = controllerProfileId;
     private readonly MidiMapConfigurationStore _store = store ?? new MidiMapConfigurationStore();
     private readonly MixerCommandCatalog _commandCatalog = commandCatalog ?? new MixerCommandCatalog();
 
@@ -16,7 +18,7 @@ public sealed class MidiMapEditor(
 
     public async Task SaveAsync(string path, CancellationToken cancellationToken = default)
     {
-        await MidiMapConfigurationStore.SaveAsync(_bankSet, path, cancellationToken).ConfigureAwait(false);
+        await MidiMapConfigurationStore.SaveAsync(_bankSet, path, _controllerProfileId, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task LoadAsync(string path, CancellationToken cancellationToken = default)

@@ -16,15 +16,13 @@ namespace WECPBXR.UI.ViewModels;
 
 public sealed class MainWindowViewModel : ObservableObject, IDisposable
 {
-    private const int WorkSurfaceOffsetY = 46;
-    private const int LowerBlockOffsetY = 64;
-
-    private readonly BankSet _bankSet;
-    private readonly MappingEngine _mappingEngine;
-    private readonly MidiMapEditor _mapEditor;
+    private BankSet _bankSet;
+    private MappingEngine _mappingEngine;
+    private MidiMapEditor _mapEditor;
     private readonly MidiInputManager _midi;
     private readonly ApplicationSettingsStore _settingsStore;
     private readonly ApplicationSettings _settings;
+    private ControllerProfile _controllerProfile;
     private readonly Dictionary<string, ControlSlotViewModel> _slotLookup = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, MixerAssignment> _assignmentLookup;
     private readonly object _mappingLock = new();
@@ -52,17 +50,19 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
     private IBrush _midiIndicatorBrush = Brushes.DimGray;
     private ControlSlotViewModel? _selectedSlot;
     private MidiInputDeviceInfo? _selectedMidiDevice;
+    private ControllerProfileOption? _selectedControllerProfile;
     private BXrMixerClient? _mixer;
     private bool _disposed;
 
     public MainWindowViewModel()
     {
-        _bankSet = DefaultControlBankFactory.CreateDefaultBankSet();
-        _mappingEngine = new MappingEngine(_bankSet);
-        _mapEditor = new MidiMapEditor(_bankSet);
-        _midi = new MidiInputManager();
         _settingsStore = new ApplicationSettingsStore();
         _settings = _settingsStore.Load();
+        _controllerProfile = ControllerProfileCatalog.GetOrDefault(_settings.Controller.ProfileId);
+        _bankSet = DefaultControlBankFactory.CreateDefaultBankSet(_controllerProfile);
+        _mappingEngine = new MappingEngine(_bankSet);
+        _mapEditor = new MidiMapEditor(_bankSet, _controllerProfile.Id);
+        _midi = new MidiInputManager();
         _assignmentLookup = BuildAssignmentLookup(_mapEditor.CommandCatalog);
 
         if (!string.IsNullOrWhiteSpace(_settings.XR.Address))
@@ -70,8 +70,8 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
             _mixerAddress = _settings.XR.Address;
         }
 
-        _mappingEngine.BankChanged += (_, _) => RefreshCurrentBank();
-        _mappingEngine.SlotStateChanged += (_, eventArgs) => RunOnUiThread(() => UpdateSlot(eventArgs.Slot));
+        _mappingEngine.BankChanged += OnBankChanged;
+        _mappingEngine.SlotStateChanged += OnSlotStateChanged;
         _midi.ControlChanged += OnMidiControlChanged;
 
         LoadMapCommand = new RelayCommand(LoadMap);
@@ -99,6 +99,13 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
             AssignmentCommands.Add(command.Key);
         }
 
+        foreach (ControllerProfile profile in ControllerProfileCatalog.All)
+        {
+            ControllerProfiles.Add(new ControllerProfileOption(profile.Id, profile.Name));
+        }
+
+        _selectedControllerProfile = ControllerProfiles.FirstOrDefault(profile => profile.Id == _controllerProfile.Id);
+
         TryAutoLoadMap();
         RefreshMidiDevices();
         RefreshCurrentBank();
@@ -112,6 +119,8 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
     public ObservableCollection<ControlSlotViewModel> Buttons { get; } = [];
 
     public ObservableCollection<MidiInputDeviceInfo> MidiDevices { get; } = [];
+
+    public ObservableCollection<ControllerProfileOption> ControllerProfiles { get; } = [];
 
     public ObservableCollection<string> AssignmentCommands { get; } = [];
 
@@ -148,6 +157,8 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
     public ICommand SaveMapCommand { get; }
 
     public string SoftwareVersionText => $"Software version {GetApplicationVersion()}";
+
+    public string ControllerProfileName => _controllerProfile.Name;
 
     public ICommand ToggleLogCommand { get; }
 
@@ -266,6 +277,29 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         set => SetProperty(ref _selectedMidiDevice, value);
     }
 
+    public ControllerProfileOption? SelectedControllerProfile
+    {
+        get => _selectedControllerProfile;
+        set
+        {
+            if (value is null || string.Equals(value.Id, _controllerProfile.Id, StringComparison.OrdinalIgnoreCase))
+            {
+                SetProperty(ref _selectedControllerProfile, value);
+                return;
+            }
+
+            if (IsMapDirty)
+            {
+                SetStatus("Controller profile change blocked: save the map first.");
+                OnPropertyChanged(nameof(SelectedControllerProfile));
+                return;
+            }
+
+            SetProperty(ref _selectedControllerProfile, value);
+            ApplyControllerProfile(value.Id);
+        }
+    }
+
     public string MixerAddress
     {
         get => _mixerAddress;
@@ -349,6 +383,43 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         {
             SetStatus($"Map load failed: {exception.Message}");
         }
+    }
+
+    private void ApplyControllerProfile(string profileId)
+    {
+        ControllerProfile nextProfile = ControllerProfileCatalog.GetOrDefault(profileId);
+
+        lock (_mappingLock)
+        {
+            _mappingEngine.BankChanged -= OnBankChanged;
+            _mappingEngine.SlotStateChanged -= OnSlotStateChanged;
+
+            _controllerProfile = nextProfile;
+            _bankSet = DefaultControlBankFactory.CreateDefaultBankSet(_controllerProfile);
+            _mappingEngine = new MappingEngine(_bankSet);
+            _mapEditor = new MidiMapEditor(_bankSet, _controllerProfile.Id);
+
+            _mappingEngine.BankChanged += OnBankChanged;
+            _mappingEngine.SlotStateChanged += OnSlotStateChanged;
+        }
+
+        _settings.Controller.ProfileId = _controllerProfile.Id;
+        SaveSettings();
+
+        TryAutoLoadMap();
+        RefreshCurrentBank();
+        OnPropertyChanged(nameof(ControllerProfileName));
+        SetStatus($"Controller profile: {_controllerProfile.Name}.");
+    }
+
+    private void OnBankChanged(object? sender, BankChangedEventArgs eventArgs)
+    {
+        RefreshCurrentBank();
+    }
+
+    private void OnSlotStateChanged(object? sender, SlotStateChangedEventArgs eventArgs)
+    {
+        RunOnUiThread(() => UpdateSlot(eventArgs.Slot));
     }
 
     private void LoadMap()
@@ -938,56 +1009,20 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         }
     }
 
-    private static ControlSlotViewModel CreateSlotViewModel(ControlSlotSnapshot snapshot)
+    private ControlSlotViewModel CreateSlotViewModel(ControlSlotSnapshot snapshot)
     {
-        string[] idParts = snapshot.Id.Split('-', StringSplitOptions.RemoveEmptyEntries);
-        int number = idParts.Length == 2 && int.TryParse(idParts[1], out int parsedNumber) ? parsedNumber : 1;
-
-        return snapshot.Kind switch
+        ControllerControlDefinition? control = _controllerProfile.FindControl(snapshot.Id);
+        if (control is not null)
         {
-            ControlKind.Knob => CreateKnob(snapshot, number),
-            ControlKind.Fader => CreateFader(snapshot, number),
-            ControlKind.Button => CreateButton(snapshot, number),
-            _ => new ControlSlotViewModel(snapshot, 0, 0, 80, 80)
-        };
-    }
-
-    private static ControlSlotViewModel CreateKnob(ControlSlotSnapshot snapshot, int number)
-    {
-        int column = (number - 1) % 8;
-        int row = (number - 1) / 8;
-        return new ControlSlotViewModel(snapshot, 185 + column * 92, 78 + row * 100, 76, 104);
-    }
-
-    private static ControlSlotViewModel CreateFader(ControlSlotSnapshot snapshot, int number)
-    {
-        int left = number == 1
-            ? 82
-            : 184 + (number - 2) * 92;
-
-        return new ControlSlotViewModel(snapshot, left, 488 + WorkSurfaceOffsetY - LowerBlockOffsetY, 78, 178);
-    }
-
-    private static ControlSlotViewModel CreateButton(ControlSlotSnapshot snapshot, int number)
-    {
-        switch (snapshot.Id.ToLowerInvariant())
-        {
-            case "bank-prev":
-                return new ControlSlotViewModel(snapshot, 85, 203, 72, 38);
-
-            case "bank-next":
-                return new ControlSlotViewModel(snapshot, 85, 303, 72, 38);
-
-            case "solo":
-                return new ControlSlotViewModel(snapshot, 85, 374, 72, 38);
-
-            case "send-all":
-                return new ControlSlotViewModel(snapshot, 85, 426, 72, 38);
+            return new ControlSlotViewModel(
+                snapshot,
+                control.Left,
+                control.Top,
+                control.Width,
+                control.Height);
         }
 
-        int column = (number - 1) % 8;
-        int row = (number - 1) / 8;
-        return new ControlSlotViewModel(snapshot, 188 + column * 92, 392 + WorkSurfaceOffsetY - LowerBlockOffsetY + row * 52, 72, 38);
+        return new ControlSlotViewModel(snapshot, 0, 0, 80, 80);
     }
 
     private static string DescribeResult(string prefix, MappingResult result)
@@ -1414,3 +1449,5 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
 }
 
 public sealed record MixerAssignment(string CommandKey, int Channel, int? Index);
+
+public sealed record ControllerProfileOption(string Id, string Name);

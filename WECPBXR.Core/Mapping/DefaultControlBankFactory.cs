@@ -5,11 +5,6 @@ namespace WECPBXR.Core.Mapping;
 public static class DefaultControlBankFactory
 {
     public const int DefaultBankCount = 8;
-    public const int KnobCount = 24;
-    public const int FaderCount = 9;
-    public const int AssignableButtonCount = 20;
-    private const int MatrixButtonCount = 16;
-    private const int MidiChannel = 1;
     private static readonly MixerCommandCatalog CommandCatalog = new();
 
     private static readonly (string Name, RgbColor Color)[] DefaultBanks =
@@ -24,71 +19,26 @@ public static class DefaultControlBankFactory
         ("Custom 2", new RgbColor(255, 0, 255))
     ];
 
-    public static BankSet CreateDefaultBankSet()
+    public static BankSet CreateDefaultBankSet(ControllerProfile? controllerProfile = null)
     {
-        return new BankSet(Enumerable.Range(0, DefaultBankCount).Select(CreateBank));
+        ControllerProfile profile = controllerProfile ?? ControllerProfileCatalog.Default;
+        return new BankSet(Enumerable.Range(0, DefaultBankCount).Select(index => CreateBank(index, profile)));
     }
 
-    public static ControlBank CreateBank(int index = 0)
+    public static ControlBank CreateBank(int index = 0, ControllerProfile? controllerProfile = null)
     {
         if (index < 0 || index >= DefaultBankCount)
         {
             throw new ArgumentOutOfRangeException(nameof(index), $"Default bank index must be in range 0-{DefaultBankCount - 1}.");
         }
 
+        ControllerProfile profile = controllerProfile ?? ControllerProfileCatalog.Default;
         (string bankName, RgbColor color) = DefaultBanks[index];
-        List<ControlSlot> slots = [];
-
-        for (int i = 1; i <= KnobCount; i++)
-        {
-            slots.Add(new ControlSlot(
-                Id("knob", i),
-                $"{bankName} Knob {i}",
-                ControlKind.Knob,
-                new MidiBinding(MidiMessageKind.ControlChange, MidiChannel, i)));
-        }
-
-        for (int i = 1; i <= FaderCount; i++)
-        {
-            slots.Add(new ControlSlot(
-                Id("fader", i),
-                $"{bankName} Fader {i}",
-                ControlKind.Fader,
-                new MidiBinding(MidiMessageKind.ControlChange, MidiChannel, KnobCount + i)));
-        }
-
-        slots.Add(new ControlSlot(
-            "bank-prev",
-            "BANK L",
-            ControlKind.Button,
-            new MidiBinding(MidiMessageKind.ControlChange, MidiChannel, 34)));
-
-        slots.Add(new ControlSlot(
-            "bank-next",
-            "BANK R",
-            ControlKind.Button,
-            new MidiBinding(MidiMessageKind.ControlChange, MidiChannel, 35)));
-
-        slots.Add(new ControlSlot(
-            "solo",
-            "SOLO",
-            ControlKind.Button,
-            new MidiBinding(MidiMessageKind.ControlChange, MidiChannel, 36)));
-
-        slots.Add(new ControlSlot(
-            "send-all",
-            "SEND ALL",
-            ControlKind.Button,
-            new MidiBinding(MidiMessageKind.ControlChange, MidiChannel, 37)));
-
-        for (int i = 1; i <= MatrixButtonCount; i++)
-        {
-            slots.Add(new ControlSlot(
-                Id("button", i),
-                $"{bankName} Button {i}",
-                ControlKind.Button,
-                new MidiBinding(MidiMessageKind.ControlChange, MidiChannel, 37 + i)));
-        }
+        List<ControlSlot> slots = [.. profile.Controls.Select(control => new ControlSlot(
+            control.SlotId,
+            $"{bankName} {control.DefaultLabel}",
+            control.Kind,
+            control.DefaultMidiBinding))];
 
         ControlBank bank = new(index, bankName, color, slots, []);
         ApplyDefaultAssignments(bank);

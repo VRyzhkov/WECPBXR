@@ -13,17 +13,22 @@ public sealed class MidiMapConfigurationStore
         Converters = { new JsonStringEnumConverter() }
     };
 
-    public static MidiMapConfiguration CreateConfiguration(BankSet bankSet)
+    public static MidiMapConfiguration CreateConfiguration(BankSet bankSet, string controllerProfileId = "wecpbxr-default")
     {
         return new MidiMapConfiguration
         {
+            ControllerProfileId = controllerProfileId,
             Banks = [.. bankSet.Banks.Select(CreateBankConfiguration)]
         };
     }
 
-    public static async Task SaveAsync(BankSet bankSet, string path, CancellationToken cancellationToken = default)
+    public static async Task SaveAsync(
+        BankSet bankSet,
+        string path,
+        string controllerProfileId = "wecpbxr-default",
+        CancellationToken cancellationToken = default)
     {
-        MidiMapConfiguration configuration = CreateConfiguration(bankSet);
+        MidiMapConfiguration configuration = CreateConfiguration(bankSet, controllerProfileId);
         string? directory = Path.GetDirectoryName(path);
 
         if (!string.IsNullOrEmpty(directory))

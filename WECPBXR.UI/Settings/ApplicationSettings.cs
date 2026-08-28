@@ -6,6 +6,8 @@ public sealed class ApplicationSettings
 
     public MidiApplicationSettings MIDI { get; set; } = new();
 
+    public ControllerApplicationSettings Controller { get; set; } = new();
+
     public MapApplicationSettings Map { get; set; } = new();
 }
 
@@ -23,6 +25,11 @@ public sealed class MidiApplicationSettings
     public string InputDeviceName { get; set; } = string.Empty;
 
     public bool AutoConnect { get; set; }
+}
+
+public sealed class ControllerApplicationSettings
+{
+    public string ProfileId { get; set; } = "wecpbxr-default";
 }
 
 public sealed class MapApplicationSettings
