@@ -65,6 +65,19 @@ jobs:
       run: |
         Compress-Archive -Path ./publish/WECPBXR_Console_win-x64/* -DestinationPath ./WECPBXR-Console-win-x64.zip
 
+    - name: Generate SHA256 Checksums
+      shell: pwsh
+      run: |
+        Get-ChildItem ./velopack/win, ./velopack/linux -File |
+          Where-Object { $_.Name -notlike '*.sha256' } |
+          ForEach-Object {
+            $hash = Get-FileHash $_.FullName -Algorithm SHA256
+            "$($hash.Hash.ToLowerInvariant())  $($_.Name)" | Out-File "$($_.FullName).sha256" -Encoding ascii
+          }
+
+        $consoleHash = Get-FileHash ./WECPBXR-Console-win-x64.zip -Algorithm SHA256
+        "$($consoleHash.Hash.ToLowerInvariant())  WECPBXR-Console-win-x64.zip" | Out-File ./WECPBXR-Console-win-x64.zip.sha256 -Encoding ascii
+
     # 5. Создание релиза на GitHub
     - name: Create GitHub Release
       uses: softprops/action-gh-release@v2
@@ -73,5 +86,6 @@ jobs:
           velopack/win/*
           velopack/linux/*
           WECPBXR-Console-win-x64.zip
+          WECPBXR-Console-win-x64.zip.sha256
         generate_release_notes: true
         prerelease: true # Автоматически ставит отметку Pre-release (Бета)
