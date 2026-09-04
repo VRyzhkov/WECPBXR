@@ -11,6 +11,7 @@ using WECPBXR.Core.Mapping;
 using WECPBXR.Core.Models;
 using WECPBXR.Hardware;
 using WECPBXR.UI.Settings;
+using WECPBXR.UI.Updates;
 
 namespace WECPBXR.UI.ViewModels;
 
@@ -22,6 +23,7 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
     private readonly MidiInputManager _midi;
     private readonly ApplicationSettingsStore _settingsStore;
     private readonly ApplicationSettings _settings;
+    private readonly ApplicationUpdateService _updateService;
     private ControllerProfile _controllerProfile;
     private readonly Dictionary<string, ControlSlotViewModel> _slotLookup = new(StringComparer.OrdinalIgnoreCase);
     private readonly Dictionary<string, MixerAssignment> _assignmentLookup;
@@ -58,6 +60,7 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
     {
         _settingsStore = new ApplicationSettingsStore();
         _settings = _settingsStore.Load();
+        _updateService = new ApplicationUpdateService();
         _controllerProfile = ControllerProfileCatalog.GetOrDefault(_settings.Controller.ProfileId);
         _bankSet = DefaultControlBankFactory.CreateDefaultBankSet(_controllerProfile);
         _mappingEngine = new MappingEngine(_bankSet);
@@ -93,6 +96,7 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         LearnMidiCommand = new RelayCommand(StartLearnMidi);
         CheckMapCommand = new RelayCommand(CheckMap);
         RequestMixerValuesCommand = new AsyncRelayCommand(RequestMixerValuesAsync);
+        CheckForUpdatesCommand = new AsyncRelayCommand(CheckForUpdatesAsync);
 
         foreach (MixerCommandDefinition command in _mapEditor.CommandCatalog.Commands.OrderBy(command => command.Key))
         {
@@ -110,6 +114,7 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         RefreshMidiDevices();
         RefreshCurrentBank();
         _ = AutoConnectAsync();
+        _ = CheckForUpdatesAsync(silentWhenUnavailable: true);
     }
 
     public ObservableCollection<ControlSlotViewModel> Knobs { get; } = [];
@@ -167,6 +172,8 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
     public ICommand CheckMapCommand { get; }
 
     public ICommand RequestMixerValuesCommand { get; }
+
+    public ICommand CheckForUpdatesCommand { get; }
 
     public bool IsAssignmentMode
     {
@@ -360,6 +367,52 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         if (_settings.XR.AutoConnect)
         {
             await ConnectMixerAsync().ConfigureAwait(true);
+        }
+    }
+
+    private Task CheckForUpdatesAsync()
+    {
+        return CheckForUpdatesAsync(silentWhenUnavailable: false);
+    }
+
+    private async Task CheckForUpdatesAsync(bool silentWhenUnavailable)
+    {
+        try
+        {
+            if (!silentWhenUnavailable)
+            {
+                SetStatus("Update: checking GitHub Releases.");
+            }
+
+            ApplicationUpdateResult result = await _updateService
+                .CheckDownloadAndApplyAsync(progress => RunOnUiThread(() => SetStatus($"Update: downloading {progress}%.")))
+                .ConfigureAwait(false);
+
+            RunOnUiThread(() =>
+            {
+                switch (result.Kind)
+                {
+                    case ApplicationUpdateResultKind.NotInstalled:
+                        if (!silentWhenUnavailable)
+                        {
+                            SetStatus("Update: Velopack install is required for self-update.");
+                        }
+
+                        break;
+
+                    case ApplicationUpdateResultKind.NoUpdate:
+                        SetStatus("Update: already on the latest version.");
+                        break;
+
+                    case ApplicationUpdateResultKind.Restarting:
+                        SetStatus($"Update: restarting into {result.Version}.");
+                        break;
+                }
+            });
+        }
+        catch (Exception exception)
+        {
+            RunOnUiThread(() => SetStatus($"Update failed: {exception.Message}"));
         }
     }
 

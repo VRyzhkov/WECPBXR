@@ -20,6 +20,11 @@ jobs:
       with:
         dotnet-version: '8.0.x'
 
+    - name: Install Velopack CLI
+      shell: pwsh
+      run: |
+        dotnet tool install --global vpk --version 1.2.0
+
     - name: Read version from tag
       shell: pwsh
       run: |
@@ -49,11 +54,15 @@ jobs:
         dotnet publish WECPBXR.Console/WECPBXR.Console.csproj -c Release -r win-x64 --self-contained true -o ./publish/WECPBXR_Console_win-x64 -p:Version=$env:WECPBXR_VERSION -p:InformationalVersion=$env:WECPBXR_INFORMATIONAL_VERSION
 
     # 4. Упаковка артефактов
-    - name: Zip Artifacts
+    - name: Package UI with Velopack
       shell: pwsh
       run: |
-        Compress-Archive -Path ./publish/WECPBXR_UI_win-x64/* -DestinationPath ./WECPBXR-UI-win-x64.zip
-        tar -czf ./WECPBXR-UI-linux-x64.tar.gz -C ./publish/WECPBXR_UI_linux-x64 .
+        vpk pack --packId VRyzhkov.WECPBXR.UI --packTitle WECPBXR --packAuthors VRyzhkov --packVersion $env:WECPBXR_VERSION --packDir ./publish/WECPBXR_UI_win-x64 --mainExe WECPBXR.UI.exe --channel win --runtime win-x64 --outputDir ./velopack/win --icon ./WECPBXR.UI/Assets/midi-connector.ico
+        vpk pack --packId VRyzhkov.WECPBXR.UI --packTitle WECPBXR --packAuthors VRyzhkov --packVersion $env:WECPBXR_VERSION --packDir ./publish/WECPBXR_UI_linux-x64 --mainExe WECPBXR.UI --channel linux --runtime linux-x64 --outputDir ./velopack/linux --icon ./WECPBXR.UI/Assets/midi-connector.png
+
+    - name: Zip Console Artifact
+      shell: pwsh
+      run: |
         Compress-Archive -Path ./publish/WECPBXR_Console_win-x64/* -DestinationPath ./WECPBXR-Console-win-x64.zip
 
     # 5. Создание релиза на GitHub
@@ -61,8 +70,8 @@ jobs:
       uses: softprops/action-gh-release@v2
       with:
         files: |
-          WECPBXR-UI-win-x64.zip
-          WECPBXR-UI-linux-x64.tar.gz
+          velopack/win/*
+          velopack/linux/*
           WECPBXR-Console-win-x64.zip
         generate_release_notes: true
         prerelease: true # Автоматически ставит отметку Pre-release (Бета)

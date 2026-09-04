@@ -304,7 +304,8 @@
         <Button Content="Assign" Command="{Binding ToggleAssignmentModeCommand}" ToolTip.Tip="Open function assignment mode" Classes="panel" Margin="0,0,6,0" />
         <Button Content="Check" Command="{Binding CheckMapCommand}" ToolTip.Tip="Check map for duplicate MIDI and missing or unknown OSC bindings" Classes="panel" Margin="0,0,6,0" />
         <Button Content="SF" Command="{Binding SimulateFaderCommand}" ToolTip.Tip="Simulate channel 1 fader movement" Classes="panel" Margin="0,0,6,0" />
-        <Button Content="SM" Command="{Binding SimulateMuteCommand}" ToolTip.Tip="Simulate channel 1 mute button press" Classes="panel" />
+        <Button Content="SM" Command="{Binding SimulateMuteCommand}" ToolTip.Tip="Simulate channel 1 mute button press" Classes="panel" Margin="0,0,6,0" />
+        <Button Content="Upd" Command="{Binding CheckForUpdatesCommand}" ToolTip.Tip="Check GitHub Releases for updates" Classes="panel" />
       </StackPanel>
 
       <StackPanel Canvas.Left="78" Canvas.Top="31" Orientation="Horizontal" IsVisible="{Binding IsAssignmentPanelVisible}">
