@@ -53,6 +53,31 @@ public sealed class ControlSlotViewModel(
 
     public IBrush StateBrush => _snapshot.IsLocked ? Brushes.DarkOrange : Brushes.LimeGreen;
 
+    public IBrush AkaiButtonBrush => Id switch
+    {
+        "bank-prev" or "bank-next" => new SolidColorBrush(Color.Parse("#FFB45F")),
+        "button-01" or "button-02" or "button-03" or "button-04" or
+        "button-05" or "button-06" or "button-07" or "button-08" =>
+            new SolidColorBrush(Color.Parse("#F2A45B")),
+        "button-09" or "button-10" or "button-11" or "button-12" or
+        "button-13" or "button-14" or "button-15" or "button-16" =>
+            new SolidColorBrush(Color.Parse("#EE526A")),
+        _ => new SolidColorBrush(Color.Parse("#E8E9E7"))
+    };
+
+    public string AkaiHardwareLabel => Id switch
+    {
+        "button-01" or "button-02" or "button-03" or "button-04" or
+        "button-05" or "button-06" or "button-07" or "button-08" => "MUTE",
+        "button-09" or "button-10" or "button-11" or "button-12" or
+        "button-13" or "button-14" or "button-15" or "button-16" => "REC ARM",
+        "send-all" => "SEND ALL",
+        "bank-prev" => "BANK LEFT",
+        "bank-next" => "BANK RIGHT",
+        "solo" => "SOLO",
+        _ => string.Empty
+    };
+
     public bool IsSelected
     {
         get => _isSelected;

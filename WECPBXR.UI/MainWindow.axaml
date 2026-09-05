@@ -18,6 +18,8 @@
       <Setter Property="Height" Value="28" />
       <Setter Property="MinWidth" Value="36" />
       <Setter Property="Padding" Value="5,0" />
+      <Setter Property="HorizontalContentAlignment" Value="Center" />
+      <Setter Property="VerticalContentAlignment" Value="Center" />
       <Setter Property="Foreground" Value="#EAF0F7" />
       <Setter Property="Background" Value="#303640" />
       <Setter Property="BorderBrush" Value="#68727F" />
@@ -66,10 +68,6 @@
 
   <Window.Resources>
     <DataTemplate x:Key="MidiDeviceTemplate">
-      <TextBlock Text="{Binding Name}" />
-    </DataTemplate>
-
-    <DataTemplate x:Key="ControllerProfileTemplate">
       <TextBlock Text="{Binding Name}" />
     </DataTemplate>
 
@@ -216,6 +214,134 @@
                 IsHitTestVisible="False" />
       </Grid>
     </DataTemplate>
+
+    <DataTemplate x:Key="AkaiKnobTemplate" DataType="vm:ControlSlotViewModel">
+      <Grid ToolTip.Tip="{Binding BindingText}" PointerPressed="ControlSlot_PointerPressed">
+        <Grid.RowDefinitions>
+          <RowDefinition Height="16" />
+          <RowDefinition Height="60" />
+          <RowDefinition Height="14" />
+        </Grid.RowDefinitions>
+        <TextBlock Text="{Binding Label}"
+                   Foreground="#F4F4F2"
+                   FontSize="8"
+                   FontWeight="SemiBold"
+                   TextAlignment="Center"
+                   TextTrimming="CharacterEllipsis" />
+        <Grid Grid.Row="1">
+          <Ellipse Width="56" Height="56"
+                   Stroke="#D9D9D5"
+                   StrokeThickness="3"
+                   StrokeDashArray="1,3" />
+          <Ellipse Width="44" Height="44"
+                   Fill="#111214"
+                   Stroke="#050506"
+                   StrokeThickness="3" />
+          <Ellipse Width="34" Height="34"
+                   Fill="#303238"
+                   Stroke="#565960"
+                   StrokeThickness="1" />
+          <Rectangle Width="4" Height="20"
+                     Fill="#F1F1ED"
+                     RadiusX="2" RadiusY="2"
+                     VerticalAlignment="Top"
+                     Margin="0,11,0,0" />
+        </Grid>
+        <ContentControl Grid.Row="2" Content="{Binding}" ContentTemplate="{StaticResource ValueBarsTemplate}" />
+        <Border Grid.RowSpan="3"
+                BorderBrush="{Binding SelectionBorderBrush}"
+                BorderThickness="{Binding SelectionBorderThickness}"
+                CornerRadius="6"
+                IsHitTestVisible="False" />
+      </Grid>
+    </DataTemplate>
+
+    <DataTemplate x:Key="AkaiButtonTemplate" DataType="vm:ControlSlotViewModel">
+      <Grid ToolTip.Tip="{Binding BindingText}" PointerPressed="ControlSlot_PointerPressed">
+        <Grid.RowDefinitions>
+          <RowDefinition Height="11" />
+          <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+        <TextBlock Grid.Row="0"
+                   Text="{Binding AkaiHardwareLabel}"
+                   Foreground="#EFEFEC"
+                   FontSize="7"
+                   FontWeight="SemiBold"
+                   TextAlignment="Center" />
+        <Border Grid.Row="1"
+                Background="#090A0C"
+                BorderBrush="#08090A"
+                BorderThickness="2"
+                CornerRadius="4"
+                Padding="3">
+          <Border Background="{Binding AkaiButtonBrush}"
+                  BorderBrush="#F5C8A0"
+                  BorderThickness="1"
+                  CornerRadius="3">
+            <TextBlock Text="{Binding Label}"
+                       Foreground="#25262A"
+                       FontSize="7"
+                       FontWeight="Bold"
+                       TextAlignment="Center"
+                       TextWrapping="Wrap"
+                       TextTrimming="CharacterEllipsis"
+                       VerticalAlignment="Center"
+                       Margin="2,0" />
+          </Border>
+        </Border>
+        <Border Grid.RowSpan="2"
+                BorderBrush="{Binding SelectionBorderBrush}"
+                BorderThickness="{Binding SelectionBorderThickness}"
+                CornerRadius="5"
+                IsHitTestVisible="False" />
+      </Grid>
+    </DataTemplate>
+
+    <DataTemplate x:Key="AkaiFaderTemplate" DataType="vm:ControlSlotViewModel">
+      <Grid ToolTip.Tip="{Binding BindingText}" PointerPressed="ControlSlot_PointerPressed">
+        <Grid.RowDefinitions>
+          <RowDefinition Height="18" />
+          <RowDefinition Height="108" />
+          <RowDefinition Height="14" />
+        </Grid.RowDefinitions>
+        <TextBlock Text="{Binding Label}"
+                   Foreground="#F4F4F2"
+                   FontSize="9"
+                   FontWeight="SemiBold"
+                   TextAlignment="Center"
+                   TextTrimming="CharacterEllipsis" />
+        <Grid Grid.Row="1">
+          <Border Width="48" Height="104"
+                  Background="#101113"
+                  BorderBrush="#050506"
+                  BorderThickness="3"
+                  CornerRadius="5" />
+          <Rectangle Width="7" Height="90"
+                     Fill="#050506"
+                     Stroke="#31343A"
+                     StrokeThickness="1"
+                     RadiusX="2" RadiusY="2" />
+          <Border Width="42" Height="24"
+                  Background="#34363A"
+                  BorderBrush="#0A0B0D"
+                  BorderThickness="2"
+                  CornerRadius="2"
+                  VerticalAlignment="Bottom"
+                  Margin="0,0,0,14">
+            <StackPanel VerticalAlignment="Center">
+              <Rectangle Height="1" Fill="#8A8D91" Margin="4,0,4,3" />
+              <Rectangle Height="1" Fill="#8A8D91" Margin="4,0" />
+            </StackPanel>
+          </Border>
+        </Grid>
+        <ContentControl Grid.Row="2" Content="{Binding}" ContentTemplate="{StaticResource ValueBarsTemplate}" />
+        <Border Grid.RowSpan="3"
+                BorderBrush="{Binding SelectionBorderBrush}"
+                BorderThickness="{Binding SelectionBorderThickness}"
+                CornerRadius="6"
+                IsHitTestVisible="False" />
+      </Grid>
+    </DataTemplate>
   </Window.Resources>
 
   <Viewbox Stretch="Uniform">
@@ -227,15 +353,63 @@
               Background="#24262D"
               BorderBrush="#050609"
               BorderThickness="4"
-              CornerRadius="28" />
+              CornerRadius="28"
+              IsVisible="{Binding IsWorldeProfile}" />
+
+      <Border Canvas.Left="16"
+              Canvas.Top="12"
+              Width="928"
+              Height="700"
+              BorderBrush="#08090A"
+              BorderThickness="5"
+              CornerRadius="26"
+              IsVisible="{Binding IsAkaiProfile}">
+        <Border.Background>
+          <LinearGradientBrush StartPoint="0%,0%" EndPoint="100%,100%">
+            <GradientStop Color="#26272A" Offset="0" />
+            <GradientStop Color="#303136" Offset="0.72" />
+            <GradientStop Color="#45464A" Offset="1" />
+          </LinearGradientBrush>
+        </Border.Background>
+      </Border>
+
+      <Border Canvas.Left="846"
+              Canvas.Top="64"
+              Width="92"
+              Height="410"
+              Background="#173B3C40"
+              CornerRadius="12"
+              IsVisible="{Binding IsAkaiProfile}" />
 
       <TextBlock Canvas.Left="78"
-                 Canvas.Top="66"
-                 Text="WORLDE"
+                 Canvas.Top="67"
+                 Text="{Binding ControllerBrandName}"
                  Foreground="#F5F7FA"
                  FontSize="24"
                  FontWeight="Black"
-                 Opacity="0.9" />
+                 Opacity="0.9"
+                 Cursor="Hand"
+                 ToolTip.Tip="Right-click to select controller skin">
+        <TextBlock.ContextMenu>
+          <ContextMenu>
+            <MenuItem Header="WORLDE Easycontrol Plus"
+                      Command="{Binding SelectControllerProfileCommand}"
+                      CommandParameter="wecpbxr-default" />
+            <MenuItem Header="AKAI MIDImix"
+                      Command="{Binding SelectControllerProfileCommand}"
+                      CommandParameter="akai-midimix" />
+          </ContextMenu>
+        </TextBlock.ContextMenu>
+      </TextBlock>
+
+      <TextBlock Canvas.Left="746"
+                 Canvas.Top="66"
+                 Text="MIDIMIX"
+                 Foreground="#F5F7FA"
+                 FontSize="25"
+                 FontWeight="Bold"
+                 Opacity="0.95"
+                 IsVisible="{Binding IsAkaiProfile}" />
 
       <Border Canvas.Left="74"
               Canvas.Top="104"
@@ -245,7 +419,28 @@
               BorderBrush="#D8DEE8"
               BorderThickness="1"
               CornerRadius="9"
+              IsVisible="{Binding IsWorldeProfile}"
               ToolTip.Tip="{Binding BankTitle}">
+        <Border.ContextMenu>
+          <ContextMenu>
+            <MenuItem Header="1 bank" Command="{Binding SetBankCountCommand}" CommandParameter="1" />
+            <MenuItem Header="2 banks" Command="{Binding SetBankCountCommand}" CommandParameter="2" />
+            <MenuItem Header="3 banks" Command="{Binding SetBankCountCommand}" CommandParameter="3" />
+            <MenuItem Header="4 banks" Command="{Binding SetBankCountCommand}" CommandParameter="4" />
+            <MenuItem Header="5 banks" Command="{Binding SetBankCountCommand}" CommandParameter="5" />
+            <MenuItem Header="6 banks" Command="{Binding SetBankCountCommand}" CommandParameter="6" />
+            <MenuItem Header="7 banks" Command="{Binding SetBankCountCommand}" CommandParameter="7" />
+            <MenuItem Header="8 banks" Command="{Binding SetBankCountCommand}" CommandParameter="8" />
+            <MenuItem Header="9 banks" Command="{Binding SetBankCountCommand}" CommandParameter="9" />
+            <MenuItem Header="10 banks" Command="{Binding SetBankCountCommand}" CommandParameter="10" />
+            <MenuItem Header="11 banks" Command="{Binding SetBankCountCommand}" CommandParameter="11" />
+            <MenuItem Header="12 banks" Command="{Binding SetBankCountCommand}" CommandParameter="12" />
+            <MenuItem Header="13 banks" Command="{Binding SetBankCountCommand}" CommandParameter="13" />
+            <MenuItem Header="14 banks" Command="{Binding SetBankCountCommand}" CommandParameter="14" />
+            <MenuItem Header="15 banks" Command="{Binding SetBankCountCommand}" CommandParameter="15" />
+            <MenuItem Header="16 banks" Command="{Binding SetBankCountCommand}" CommandParameter="16" />
+          </ContextMenu>
+        </Border.ContextMenu>
         <TextBlock Text="{Binding BankTitle}"
                    Foreground="{Binding BankTextBrush}"
                    FontSize="13"
@@ -256,12 +451,53 @@
                    Margin="8,0" />
       </Border>
 
+      <Border Canvas.Left="150"
+              Canvas.Top="70"
+              Width="174"
+              Height="23"
+              Background="{Binding BankBrush}"
+              BorderBrush="#ECEDEB"
+              BorderThickness="1"
+              CornerRadius="4"
+              IsVisible="{Binding IsAkaiProfile}"
+              ToolTip.Tip="{Binding BankTitle}">
+        <Border.ContextMenu>
+          <ContextMenu>
+            <MenuItem Header="1 bank" Command="{Binding SetBankCountCommand}" CommandParameter="1" />
+            <MenuItem Header="2 banks" Command="{Binding SetBankCountCommand}" CommandParameter="2" />
+            <MenuItem Header="3 banks" Command="{Binding SetBankCountCommand}" CommandParameter="3" />
+            <MenuItem Header="4 banks" Command="{Binding SetBankCountCommand}" CommandParameter="4" />
+            <MenuItem Header="5 banks" Command="{Binding SetBankCountCommand}" CommandParameter="5" />
+            <MenuItem Header="6 banks" Command="{Binding SetBankCountCommand}" CommandParameter="6" />
+            <MenuItem Header="7 banks" Command="{Binding SetBankCountCommand}" CommandParameter="7" />
+            <MenuItem Header="8 banks" Command="{Binding SetBankCountCommand}" CommandParameter="8" />
+            <MenuItem Header="9 banks" Command="{Binding SetBankCountCommand}" CommandParameter="9" />
+            <MenuItem Header="10 banks" Command="{Binding SetBankCountCommand}" CommandParameter="10" />
+            <MenuItem Header="11 banks" Command="{Binding SetBankCountCommand}" CommandParameter="11" />
+            <MenuItem Header="12 banks" Command="{Binding SetBankCountCommand}" CommandParameter="12" />
+            <MenuItem Header="13 banks" Command="{Binding SetBankCountCommand}" CommandParameter="13" />
+            <MenuItem Header="14 banks" Command="{Binding SetBankCountCommand}" CommandParameter="14" />
+            <MenuItem Header="15 banks" Command="{Binding SetBankCountCommand}" CommandParameter="15" />
+            <MenuItem Header="16 banks" Command="{Binding SetBankCountCommand}" CommandParameter="16" />
+          </ContextMenu>
+        </Border.ContextMenu>
+        <TextBlock Text="{Binding BankTitle}"
+                   Foreground="{Binding BankTextBrush}"
+                   FontSize="10"
+                   FontWeight="Bold"
+                   TextAlignment="Center"
+                   VerticalAlignment="Center"
+                   TextTrimming="CharacterEllipsis"
+                   Margin="6,0" />
+      </Border>
+
       <TextBlock Canvas.Left="730"
                  Canvas.Top="632"
                  Text="{Binding SoftwareVersionText}"
                  Foreground="#B7C0CC"
                  FontSize="10"
                  FontWeight="SemiBold"
+                 IsVisible="{Binding IsWorldeProfile}"
                  Opacity="0.9" />
 
       <TextBlock Canvas.Left="730"
@@ -272,16 +508,17 @@
                  FontWeight="SemiBold"
                  Width="190"
                  TextTrimming="CharacterEllipsis"
+                 IsVisible="{Binding IsWorldeProfile}"
                  Opacity="0.95" />
 
-      <ComboBox Canvas.Left="730"
-                Canvas.Top="674"
-                Width="150"
-                ItemsSource="{Binding ControllerProfiles}"
-                SelectedItem="{Binding SelectedControllerProfile, Mode=TwoWay}"
-                ItemTemplate="{StaticResource ControllerProfileTemplate}"
-                ToolTip.Tip="Controller profile"
-                Classes="panel" />
+      <TextBlock Canvas.Left="748"
+                 Canvas.Top="682"
+                 Text="{Binding SoftwareVersionText}"
+                 Foreground="#C7C8CA"
+                 FontSize="8"
+                 FontWeight="SemiBold"
+                 IsVisible="{Binding IsAkaiProfile}"
+                 Opacity="0.9" />
 
       <StackPanel Canvas.Left="78" Canvas.Top="31" Orientation="Horizontal" IsVisible="{Binding IsNormalPanelVisible}">
         <Ellipse Width="9" Height="9" Fill="{Binding MixerIndicatorBrush}" VerticalAlignment="Center" Margin="0,0,5,0" />
@@ -303,34 +540,33 @@
         <Button Content="Map" Command="{Binding LoadMapCommand}" ToolTip.Tip="Load MIDI/OSC map from midi-map.json" Classes="panel" Margin="0,0,6,0" />
         <Button Content="Assign" Command="{Binding ToggleAssignmentModeCommand}" ToolTip.Tip="Open function assignment mode" Classes="panel" Margin="0,0,6,0" />
         <Button Content="Check" Command="{Binding CheckMapCommand}" ToolTip.Tip="Check map for duplicate MIDI and missing or unknown OSC bindings" Classes="panel" Margin="0,0,6,0" />
-        <Button Content="SF" Command="{Binding SimulateFaderCommand}" ToolTip.Tip="Simulate channel 1 fader movement" Classes="panel" Margin="0,0,6,0" />
-        <Button Content="SM" Command="{Binding SimulateMuteCommand}" ToolTip.Tip="Simulate channel 1 mute button press" Classes="panel" Margin="0,0,6,0" />
         <Button Content="Upd" Command="{Binding CheckForUpdatesCommand}" ToolTip.Tip="Check GitHub Releases for updates" Classes="panel" />
       </StackPanel>
 
       <StackPanel Canvas.Left="78" Canvas.Top="31" Orientation="Horizontal" IsVisible="{Binding IsAssignmentPanelVisible}">
-        <Button Content="{Binding AssignmentModeText}" Command="{Binding ToggleAssignmentModeCommand}" ToolTip.Tip="Close function assignment mode" Classes="panel" Margin="0,0,8,0" />
+        <Button Content="{Binding AssignmentModeText}" Command="{Binding ToggleAssignmentModeCommand}" ToolTip.Tip="Close function assignment mode" Classes="panel" Margin="0,0,4,0" />
         <TextBlock Text="{Binding SelectedSlotText}"
-                   Width="78"
+                   Width="70"
                    Foreground="#EAF0F7"
                    FontSize="10"
                    FontWeight="SemiBold"
                    VerticalAlignment="Center"
                    TextTrimming="CharacterEllipsis"
-                   Margin="0,0,8,0" />
+                   Margin="0,0,4,0" />
         <ComboBox ItemsSource="{Binding AssignmentCommands}"
                   SelectedItem="{Binding SelectedAssignmentCommand, Mode=TwoWay}"
-                  Width="86"
+                  Width="80"
+                  Margin="0,0,4,0"
                   Classes="panel" />
-        <TextBox Text="{Binding AssignmentChannel, Mode=TwoWay}" ToolTip.Tip="XR channel 1-18" Width="34" Classes="panel" />
-        <TextBox Text="{Binding AssignmentIndex, Mode=TwoWay}" ToolTip.Tip="Bus/FX index. Empty for main, mute, pan." Width="34" Classes="panel" />
-        <TextBox Text="{Binding AssignmentMidiChannel, Mode=TwoWay}" ToolTip.Tip="MIDI channel 1-16" Width="34" Classes="panel" />
-        <TextBox Text="{Binding AssignmentMidiNumber, Mode=TwoWay}" ToolTip.Tip="MIDI CC number 0-127" Width="34" Classes="panel" />
-        <Button Content="MIDI" Command="{Binding ApplyMidiBindingCommand}" ToolTip.Tip="Assign MIDI Control Change to selected control" Classes="panel" Margin="0,0,6,0" />
-        <Button Content="Set" Command="{Binding ApplyAssignmentCommand}" ToolTip.Tip="Assign selected function to selected control" Classes="panel" Margin="0,0,6,0" />
-        <Button Content="Clear" Command="{Binding ClearAssignmentCommand}" ToolTip.Tip="Clear mixer function from selected control" Classes="panel" Margin="0,0,6,0" />
-        <Button Content="Learn" Command="{Binding LearnMidiCommand}" ToolTip.Tip="Learn MIDI binding from the next physical controller event" Classes="panel" Margin="0,0,6,0" />
-        <Button Content="Check" Command="{Binding CheckMapCommand}" ToolTip.Tip="Check map for duplicate MIDI and missing or unknown OSC bindings" Classes="panel" Margin="0,0,6,0" />
+        <TextBox Text="{Binding AssignmentChannel, Mode=TwoWay}" ToolTip.Tip="XR channel 1-18" Width="28" MinWidth="28" MaxWidth="28" Padding="3,4" Margin="0,0,4,0" Classes="panel" />
+        <TextBox Text="{Binding AssignmentIndex, Mode=TwoWay}" ToolTip.Tip="Bus/FX index. Empty for main, mute, pan." Width="28" MinWidth="28" MaxWidth="28" Padding="3,4" Margin="0,0,4,0" Classes="panel" />
+        <TextBox Text="{Binding AssignmentMidiChannel, Mode=TwoWay}" ToolTip.Tip="MIDI channel 1-16" Width="28" MinWidth="28" MaxWidth="28" Padding="3,4" Margin="0,0,4,0" Classes="panel" />
+        <TextBox Text="{Binding AssignmentMidiNumber, Mode=TwoWay}" ToolTip.Tip="MIDI CC number 0-127" Width="28" MinWidth="28" MaxWidth="28" Padding="3,4" Margin="0,0,4,0" Classes="panel" />
+        <Button Content="MIDI" Command="{Binding ApplyMidiBindingCommand}" ToolTip.Tip="Assign MIDI Control Change to selected control" Classes="panel" Margin="0,0,4,0" />
+        <Button Content="Set" Command="{Binding ApplyAssignmentCommand}" ToolTip.Tip="Assign selected function to selected control" Classes="panel" Margin="0,0,4,0" />
+        <Button Content="Clear" Command="{Binding ClearAssignmentCommand}" ToolTip.Tip="Clear mixer function from selected control" Classes="panel" Margin="0,0,4,0" />
+        <Button Content="Learn" Command="{Binding LearnMidiCommand}" ToolTip.Tip="Learn MIDI binding from the next physical controller event" Classes="panel" Margin="0,0,4,0" />
+        <Button Content="Check" Command="{Binding CheckMapCommand}" ToolTip.Tip="Check map for duplicate MIDI and missing or unknown OSC bindings" Classes="panel" Margin="0,0,4,0" />
         <Button Content="{Binding SaveMapText}" Command="{Binding SaveMapCommand}" ToolTip.Tip="Save current MIDI/OSC map to midi-map.json" Classes="panel" />
       </StackPanel>
 
@@ -401,6 +637,7 @@
               BorderThickness="1"
               CornerRadius="4"
               Padding="6"
+              IsVisible="{Binding IsWorldeProfile}"
               PointerPressed="LogPanel_PointerPressed"
               ToolTip.Tip="Double-click to copy the log to clipboard">
         <ScrollViewer VerticalScrollBarVisibility="Auto"
@@ -419,7 +656,7 @@
         </ScrollViewer>
       </Border>
 
-      <ItemsControl Width="960" Height="724" ItemsSource="{Binding Knobs}" ItemTemplate="{StaticResource KnobTemplate}">
+      <ItemsControl Width="960" Height="724" ItemsSource="{Binding Knobs}" ItemTemplate="{StaticResource KnobTemplate}" IsVisible="{Binding IsWorldeProfile}">
         <ItemsControl.ItemsPanel>
           <ItemsPanelTemplate>
             <Canvas />
@@ -435,7 +672,7 @@
         </ItemsControl.ItemContainerTheme>
       </ItemsControl>
 
-      <ItemsControl Width="960" Height="724" ItemsSource="{Binding Buttons}" ItemTemplate="{StaticResource ButtonTemplate}">
+      <ItemsControl Width="960" Height="724" ItemsSource="{Binding Buttons}" ItemTemplate="{StaticResource ButtonTemplate}" IsVisible="{Binding IsWorldeProfile}">
         <ItemsControl.ItemsPanel>
           <ItemsPanelTemplate>
             <Canvas />
@@ -451,7 +688,7 @@
         </ItemsControl.ItemContainerTheme>
       </ItemsControl>
 
-      <ItemsControl Width="960" Height="724" ItemsSource="{Binding Faders}" ItemTemplate="{StaticResource FaderTemplate}">
+      <ItemsControl Width="960" Height="724" ItemsSource="{Binding Faders}" ItemTemplate="{StaticResource FaderTemplate}" IsVisible="{Binding IsWorldeProfile}">
         <ItemsControl.ItemsPanel>
           <ItemsPanelTemplate>
             <Canvas />
@@ -466,6 +703,82 @@
           </ControlTheme>
         </ItemsControl.ItemContainerTheme>
       </ItemsControl>
+
+      <ItemsControl Width="960" Height="724" ItemsSource="{Binding Knobs}" ItemTemplate="{StaticResource AkaiKnobTemplate}" IsVisible="{Binding IsAkaiProfile}">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate>
+            <Canvas />
+          </ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemContainerTheme>
+          <ControlTheme TargetType="ContentPresenter">
+            <Setter Property="Canvas.Left" Value="{Binding Left}" />
+            <Setter Property="Canvas.Top" Value="{Binding Top}" />
+            <Setter Property="Width" Value="{Binding Width}" />
+            <Setter Property="Height" Value="{Binding Height}" />
+          </ControlTheme>
+        </ItemsControl.ItemContainerTheme>
+      </ItemsControl>
+
+      <ItemsControl Width="960" Height="724" ItemsSource="{Binding Buttons}" ItemTemplate="{StaticResource AkaiButtonTemplate}" IsVisible="{Binding IsAkaiProfile}">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate>
+            <Canvas />
+          </ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemContainerTheme>
+          <ControlTheme TargetType="ContentPresenter">
+            <Setter Property="Canvas.Left" Value="{Binding Left}" />
+            <Setter Property="Canvas.Top" Value="{Binding Top}" />
+            <Setter Property="Width" Value="{Binding Width}" />
+            <Setter Property="Height" Value="{Binding Height}" />
+          </ControlTheme>
+        </ItemsControl.ItemContainerTheme>
+      </ItemsControl>
+
+      <ItemsControl Width="960" Height="724" ItemsSource="{Binding Faders}" ItemTemplate="{StaticResource AkaiFaderTemplate}" IsVisible="{Binding IsAkaiProfile}">
+        <ItemsControl.ItemsPanel>
+          <ItemsPanelTemplate>
+            <Canvas />
+          </ItemsPanelTemplate>
+        </ItemsControl.ItemsPanel>
+        <ItemsControl.ItemContainerTheme>
+          <ControlTheme TargetType="ContentPresenter">
+            <Setter Property="Canvas.Left" Value="{Binding Left}" />
+            <Setter Property="Canvas.Top" Value="{Binding Top}" />
+            <Setter Property="Width" Value="{Binding Width}" />
+            <Setter Property="Height" Value="{Binding Height}" />
+          </ControlTheme>
+        </ItemsControl.ItemContainerTheme>
+      </ItemsControl>
+
+      <Border Canvas.Left="48"
+              Canvas.Top="662"
+              Width="665"
+              Height="42"
+              Background="#E6101113"
+              BorderBrush="#5B5D61"
+              BorderThickness="1"
+              CornerRadius="3"
+              Padding="5,2"
+              IsVisible="{Binding IsAkaiProfile}"
+              PointerPressed="LogPanel_PointerPressed"
+              ToolTip.Tip="Double-click to copy the log to clipboard">
+        <ScrollViewer VerticalScrollBarVisibility="Auto"
+                      HorizontalScrollBarVisibility="Disabled">
+          <ItemsControl ItemsSource="{Binding LogEntries}">
+            <ItemsControl.ItemTemplate>
+              <DataTemplate>
+                <TextBlock Text="{Binding}"
+                           Foreground="#E4E4E1"
+                           FontSize="8"
+                           TextTrimming="CharacterEllipsis"
+                           Margin="0,0,0,1" />
+              </DataTemplate>
+            </ItemsControl.ItemTemplate>
+          </ItemsControl>
+        </ScrollViewer>
+      </Border>
     </Canvas>
   </Viewbox>
 </Window>

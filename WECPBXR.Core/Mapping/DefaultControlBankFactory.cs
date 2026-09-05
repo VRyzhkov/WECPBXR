@@ -5,6 +5,7 @@ namespace WECPBXR.Core.Mapping;
 public static class DefaultControlBankFactory
 {
     public const int DefaultBankCount = 8;
+    public const int MaximumBankCount = 16;
     private static readonly MixerCommandCatalog CommandCatalog = new();
 
     private static readonly (string Name, RgbColor Color)[] DefaultBanks =
@@ -16,20 +17,35 @@ public static class DefaultControlBankFactory
         ("Dynamics/EQ", new RgbColor(0, 255, 255)),
         ("Utility/Safety", new RgbColor(0, 0, 255)),
         ("Custom 1", new RgbColor(139, 0, 255)),
-        ("Custom 2", new RgbColor(255, 0, 255))
+        ("Custom 2", new RgbColor(255, 0, 255)),
+        ("Custom 3", new RgbColor(255, 64, 128)),
+        ("Custom 4", new RgbColor(128, 64, 255)),
+        ("Custom 5", new RgbColor(64, 128, 255)),
+        ("Custom 6", new RgbColor(64, 200, 200)),
+        ("Custom 7", new RgbColor(64, 200, 128)),
+        ("Custom 8", new RgbColor(160, 200, 64)),
+        ("Custom 9", new RgbColor(255, 180, 64)),
+        ("Custom 10", new RgbColor(255, 96, 64))
     ];
 
-    public static BankSet CreateDefaultBankSet(ControllerProfile? controllerProfile = null)
+    public static BankSet CreateDefaultBankSet(
+        ControllerProfile? controllerProfile = null,
+        int bankCount = DefaultBankCount)
     {
+        if (bankCount < 1 || bankCount > MaximumBankCount)
+        {
+            throw new ArgumentOutOfRangeException(nameof(bankCount), $"Bank count must be in range 1-{MaximumBankCount}.");
+        }
+
         ControllerProfile profile = controllerProfile ?? ControllerProfileCatalog.Default;
-        return new BankSet(Enumerable.Range(0, DefaultBankCount).Select(index => CreateBank(index, profile)));
+        return new BankSet(Enumerable.Range(0, bankCount).Select(index => CreateBank(index, profile)));
     }
 
     public static ControlBank CreateBank(int index = 0, ControllerProfile? controllerProfile = null)
     {
-        if (index < 0 || index >= DefaultBankCount)
+        if (index < 0 || index >= MaximumBankCount)
         {
-            throw new ArgumentOutOfRangeException(nameof(index), $"Default bank index must be in range 0-{DefaultBankCount - 1}.");
+            throw new ArgumentOutOfRangeException(nameof(index), $"Default bank index must be in range 0-{MaximumBankCount - 1}.");
         }
 
         ControllerProfile profile = controllerProfile ?? ControllerProfileCatalog.Default;

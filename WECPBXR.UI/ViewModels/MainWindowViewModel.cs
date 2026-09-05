@@ -48,6 +48,7 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
     private string _assignmentMidiNumber = "0";
     private string _selectedSlotText = "slot: none";
     private string _saveMapText = "Save";
+    private int _bankCount;
     private IBrush _mixerIndicatorBrush = Brushes.DimGray;
     private IBrush _midiIndicatorBrush = Brushes.DimGray;
     private ControlSlotViewModel? _selectedSlot;
@@ -60,9 +61,11 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
     {
         _settingsStore = new ApplicationSettingsStore();
         _settings = _settingsStore.Load();
+        _bankCount = Math.Clamp(_settings.Controller.BankCount, 1, DefaultControlBankFactory.MaximumBankCount);
+        _settings.Controller.BankCount = _bankCount;
         _updateService = new ApplicationUpdateService();
         _controllerProfile = ControllerProfileCatalog.GetOrDefault(_settings.Controller.ProfileId);
-        _bankSet = DefaultControlBankFactory.CreateDefaultBankSet(_controllerProfile);
+        _bankSet = DefaultControlBankFactory.CreateDefaultBankSet(_controllerProfile, _bankCount);
         _mappingEngine = new MappingEngine(_bankSet);
         _mapEditor = new MidiMapEditor(_bankSet, _controllerProfile.Id);
         _midi = new MidiInputManager();
@@ -80,8 +83,6 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         LoadMapCommand = new RelayCommand(LoadMap);
         BankPreviousCommand = new RelayCommand(() => _mappingEngine.PreviousBank());
         BankNextCommand = new RelayCommand(() => _mappingEngine.NextBank());
-        SimulateFaderCommand = new RelayCommand(SimulateFader);
-        SimulateMuteCommand = new RelayCommand(SimulateMute);
         RefreshMidiDevicesCommand = new RelayCommand(RefreshMidiDevices);
         ConnectMidiCommand = new RelayCommand(ConnectMidi);
         DisconnectMidiCommand = new RelayCommand(DisconnectMidi);
@@ -97,6 +98,8 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         CheckMapCommand = new RelayCommand(CheckMap);
         RequestMixerValuesCommand = new AsyncRelayCommand(RequestMixerValuesAsync);
         CheckForUpdatesCommand = new AsyncRelayCommand(CheckForUpdatesAsync);
+        SelectControllerProfileCommand = new RelayCommand(SelectControllerProfile);
+        SetBankCountCommand = new RelayCommand(SetBankCount);
 
         foreach (MixerCommandDefinition command in _mapEditor.CommandCatalog.Commands.OrderBy(command => command.Key))
         {
@@ -137,10 +140,6 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
 
     public ICommand BankNextCommand { get; }
 
-    public ICommand SimulateFaderCommand { get; }
-
-    public ICommand SimulateMuteCommand { get; }
-
     public ICommand RefreshMidiDevicesCommand { get; }
 
     public ICommand ConnectMidiCommand { get; }
@@ -165,6 +164,17 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
 
     public string ControllerProfileName => _controllerProfile.Name;
 
+    public string BankCountText => $"Banks: {_bankCount}";
+
+    public bool IsWorldeProfile => !IsAkaiProfile;
+
+    public bool IsAkaiProfile => string.Equals(
+        _controllerProfile.Id,
+        ControllerProfileCatalog.AkaiMidimixProfileId,
+        StringComparison.OrdinalIgnoreCase);
+
+    public string ControllerBrandName => IsAkaiProfile ? "AKAI" : "WORLDE";
+
     public ICommand ToggleLogCommand { get; }
 
     public ICommand LearnMidiCommand { get; }
@@ -174,6 +184,10 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
     public ICommand RequestMixerValuesCommand { get; }
 
     public ICommand CheckForUpdatesCommand { get; }
+
+    public ICommand SelectControllerProfileCommand { get; }
+
+    public ICommand SetBankCountCommand { get; }
 
     public bool IsAssignmentMode
     {
@@ -305,6 +319,76 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
             SetProperty(ref _selectedControllerProfile, value);
             ApplyControllerProfile(value.Id);
         }
+    }
+
+    private void SelectControllerProfile(object? parameter)
+    {
+        if (parameter is not string profileId)
+        {
+            return;
+        }
+
+        ControllerProfileOption? profile = ControllerProfiles.FirstOrDefault(option =>
+            string.Equals(option.Id, profileId, StringComparison.OrdinalIgnoreCase));
+
+        if (profile is not null)
+        {
+            SelectedControllerProfile = profile;
+        }
+    }
+
+    private void SetBankCount(object? parameter)
+    {
+        int bankCount = parameter switch
+        {
+            int value => value,
+            string text when int.TryParse(text, NumberStyles.Integer, CultureInfo.InvariantCulture, out int value) => value,
+            _ => 0
+        };
+
+        if (bankCount < 1 ||
+            bankCount > DefaultControlBankFactory.MaximumBankCount)
+        {
+            return;
+        }
+
+        if (bankCount == _bankCount)
+        {
+            SetStatus($"Bank count is already {_bankCount}.");
+            return;
+        }
+
+        if (IsMapDirty)
+        {
+            SetStatus("Bank count change blocked: save the map first.");
+            return;
+        }
+
+        int selectedBankIndex = Math.Min(_mappingEngine.CurrentBank.Index, bankCount - 1);
+
+        lock (_mappingLock)
+        {
+            _mappingEngine.BankChanged -= OnBankChanged;
+            _mappingEngine.SlotStateChanged -= OnSlotStateChanged;
+
+            _bankCount = bankCount;
+            _bankSet = DefaultControlBankFactory.CreateDefaultBankSet(_controllerProfile, _bankCount);
+            _mappingEngine = new MappingEngine(_bankSet);
+            _mapEditor = new MidiMapEditor(_bankSet, _controllerProfile.Id);
+
+            _mappingEngine.BankChanged += OnBankChanged;
+            _mappingEngine.SlotStateChanged += OnSlotStateChanged;
+        }
+
+        _settings.Controller.BankCount = _bankCount;
+        SaveSettings();
+
+        TryAutoLoadMap();
+        _bankSet.SelectBank(selectedBankIndex);
+        RefreshCurrentBank();
+        IsMapDirty = true;
+        OnPropertyChanged(nameof(BankCountText));
+        SetStatus($"Bank count changed to {_bankCount}. Save the map to keep this bank set.");
     }
 
     public string MixerAddress
@@ -448,7 +532,7 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
             _mappingEngine.SlotStateChanged -= OnSlotStateChanged;
 
             _controllerProfile = nextProfile;
-            _bankSet = DefaultControlBankFactory.CreateDefaultBankSet(_controllerProfile);
+            _bankSet = DefaultControlBankFactory.CreateDefaultBankSet(_controllerProfile, _bankCount);
             _mappingEngine = new MappingEngine(_bankSet);
             _mapEditor = new MidiMapEditor(_bankSet, _controllerProfile.Id);
 
@@ -462,6 +546,9 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         TryAutoLoadMap();
         RefreshCurrentBank();
         OnPropertyChanged(nameof(ControllerProfileName));
+        OnPropertyChanged(nameof(ControllerBrandName));
+        OnPropertyChanged(nameof(IsWorldeProfile));
+        OnPropertyChanged(nameof(IsAkaiProfile));
         SetStatus($"Controller profile: {_controllerProfile.Name}.");
     }
 
@@ -937,42 +1024,6 @@ public sealed class MainWindowViewModel : ObservableObject, IDisposable
         {
             slot.Update(snapshot);
         }
-    }
-
-    private void SimulateFader()
-    {
-        MappingResult result;
-
-        lock (_mappingLock)
-        {
-            _mappingEngine.HandleMixerChange(new MixerValueChange("/ch/01/mix/fader", 0.62));
-            result = _mappingEngine.HandleControllerChange(new ControllerInputChange(
-                MidiMessageKind.ControlChange,
-                Channel: 1,
-                Number: 26,
-                Value: 79 / 127.0,
-                RawEvent: "ui sim fader"));
-        }
-
-        SetStatus(DescribeResult("Fader simulation", result));
-    }
-
-    private void SimulateMute()
-    {
-        MappingResult result;
-
-        lock (_mappingLock)
-        {
-            _mappingEngine.HandleMixerChange(new MixerValueChange("/ch/01/mix/on", 1));
-            result = _mappingEngine.HandleControllerChange(new ControllerInputChange(
-                MidiMessageKind.NoteOn,
-                Channel: 1,
-                Number: 34,
-                Value: 1,
-                RawEvent: "ui sim mute"));
-        }
-
-        SetStatus(DescribeResult("Mute simulation", result));
     }
 
     private async void OnMidiControlChanged(object? sender, MidiControlChangedEventArgs eventArgs)

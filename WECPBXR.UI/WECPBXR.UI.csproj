@@ -17,7 +17,7 @@
     <PackageReference Include="Avalonia.Desktop" Version="12.1.1" />
     <PackageReference Include="Avalonia.Themes.Fluent" Version="12.1.1" />
     <PackageReference Include="Velopack" Version="1.2.0" />
-    <None Include="..\WECPBXR.Console\midi-map.json" Link="midi-map.json">
+    <None Update="midi-map.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
     <ProjectReference Include="..\WECPBXR.Core\WECPBXR.Core.csproj" />

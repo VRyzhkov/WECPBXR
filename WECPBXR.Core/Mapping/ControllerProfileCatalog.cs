@@ -49,13 +49,13 @@ public static class ControllerProfileCatalog
     {
         List<ControllerControlDefinition> controls = [];
 
-        AddKnobs(controls, left: 80, top: 64, columnStep: 108, rowStep: 103, width: 76, height: 104);
-        AddFaders(controls, masterLeft: 888, firstChannelLeft: 70, top: 490, columnStep: 109, width: 78, height: 178);
-        AddButton(controls, "send-all", "SEND ALL", 37, 878, 70, 72, 38);
-        AddButton(controls, "bank-prev", "BANK L", 34, 878, 180, 72, 38);
-        AddButton(controls, "bank-next", "BANK R", 35, 878, 290, 72, 38);
-        AddButton(controls, "solo", "SOLO", 36, 878, 390, 72, 38);
-        AddMatrixButtons(controls, left: 75, top: 385, columnStep: 109, rowStep: 52, width: 72, height: 38);
+        AddKnobs(controls, left: 48, top: 104, columnStep: 103, rowStep: 100, width: 74, height: 96);
+        AddFaders(controls, masterLeft: 868, firstChannelLeft: 46, top: 510, columnStep: 103, width: 72, height: 146);
+        AddButton(controls, "send-all", "SEND ALL", 37, 866, 123, 64, 44);
+        AddButton(controls, "bank-prev", "BANK L", 34, 866, 223, 64, 44);
+        AddButton(controls, "bank-next", "BANK R", 35, 866, 323, 64, 44);
+        AddButton(controls, "solo", "SOLO", 36, 866, 404, 64, 44);
+        AddMatrixButtons(controls, left: 51, top: 404, columnStep: 103, rowStep: 49, width: 64, height: 43);
 
         return new ControllerProfile(AkaiMidimixProfileId, "AKAI MIDImix", 960, 724, controls);
     }
