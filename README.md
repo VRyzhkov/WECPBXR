@@ -24,12 +24,10 @@ The project targets Behringer XR-series mixers. UI labels and diagnostics use th
 - Assignment mode for changing mixer bindings directly in the UI.
 - MIDI learn mode for assigning the next physical controller event to the selected software control.
 - Map validation for missing OSC bindings, unknown OSC bindings, and duplicate MIDI assignments.
-- Diagnostic console application for scanning mixers, testing MIDI input, editing maps, and simulating MIDI or mixer events without the desktop UI.
 
 ## Solution Structure
 
 - `WECPBXR.UI` - Avalonia desktop application and user settings.
-- `WECPBXR.Console` - diagnostic console utility for hardware checks and map editing.
 - `WECPBXR.Core` - bank model, mapping engine, MIDI/OSC map configuration, mixer command catalog, and soft-takeover logic.
 - `WECPBXR.Hardware` - MIDI input handling, OSC mixer client, and local network scanner.
 
@@ -78,12 +76,6 @@ Publish platform-specific desktop builds:
 ```powershell
 dotnet publish WECPBXR.UI -c Release -r win-x64 --self-contained true
 dotnet publish WECPBXR.UI -c Release -r linux-x64 --self-contained true
-```
-
-Run the diagnostic console:
-
-```powershell
-dotnet run --project WECPBXR.Console
 ```
 
 ## Verifying Release Checksums
@@ -149,9 +141,17 @@ If the app was published as a framework-dependent build, use `Exec=dotnet /home/
 7. Move a fader, knob, or button on the MIDI controller.
 8. If a continuous control is locked by soft takeover, move it until it reaches the current mixer value; after that, WECPBXR starts sending OSC changes.
 
+## Controller Skins
+
+WECPBXR includes separate visual layouts for the Worlde Easycontrol Plus and AKAI MIDImix controllers. To change the active skin, right-click the `WORLDE` or `AKAI` logo in the upper-left area of the controller and select `WORLDE Easycontrol Plus` or `AKAI MIDImix` from the context menu.
+
+Changing the skin updates the controller layout and its MIDI control positions while keeping the application connections and shared operating state. The selected skin is remembered for the next launch. If the current MIDI/OSC map has unsaved changes, save it before switching skins; WECPBXR blocks the switch to protect those changes.
+
+To change the number of software banks, right-click the colored bank badge and select a value from `1` to `16`. The selected count is remembered. Newly added banks use empty custom layouts, while reducing the count removes the trailing banks when the map is saved. Save the current map before changing the count, then save it again to keep the new bank set.
+
 ## Mapping
 
-The default map is stored in `WECPBXR.Console/midi-map.json` and is copied into the UI output as `midi-map.json`. The map contains bank definitions, control labels, MIDI bindings, and mixer OSC bindings.
+The default map is stored in `WECPBXR.UI/midi-map.json` and is copied into the UI output as `midi-map.json`. The map contains bank definitions, control labels, MIDI bindings, and mixer OSC bindings.
 
 In the desktop UI, use `Assign` to enter assignment mode. Select a control, choose a command, set channel and index values, then click `Set`. Use `Learn` to bind the selected software control to the next incoming MIDI event. Use `Save` to write the updated map.
 
@@ -175,6 +175,8 @@ Snapshot and tap-tempo OSC commands are included as practical utility actions, b
 
 Configure the Miwayer Worlde Easycontrol Plus controls as MIDI Control Change messages on MIDI channel `1`.
 
+A ready-to-use controller preset is included in the repository: [`WECPBXR default.easycontplus`](WECPBXR%20default.easycontplus). Open or import this file with the Easycontrol Plus configuration editor, then transfer the preset to the controller. Back up the controller's current configuration first if you may need to restore it later.
+
 | Control | MIDI channel | CC number |
 | --- | ---: | ---: |
 | Knob 1-24 | 1 | 1-24 |
@@ -197,8 +199,6 @@ Supported command keys include:
 - `fx` - input channel send level to FX 1-4.
 - `bus-on` - input channel send on/off to bus 1-6.
 - `fx-on` - input channel send on/off to FX 1-4.
-
-The diagnostic console exposes additional map commands such as `map list`, `map show`, `map set`, `map clear`, `map save`, and `map commands`.
 
 ## Current Limitations
 
@@ -251,12 +251,10 @@ WECPBXR - это кроссплатформенное desktop-приложени
 - Режим назначения функций прямо в интерфейсе.
 - MIDI learn: назначение следующего физического MIDI-события на выбранный программный контрол.
 - Проверка карты на отсутствующие OSC-назначения, неизвестные OSC-адреса и дублирующиеся MIDI-назначения.
-- Диагностическая консоль для поиска микшеров, проверки MIDI-входа, редактирования карты и симуляции MIDI/OSC-событий без desktop-интерфейса.
 
 ## Структура решения
 
 - `WECPBXR.UI` - Avalonia-приложение и пользовательские настройки.
-- `WECPBXR.Console` - диагностическая консоль для проверки оборудования и редактирования карты.
 - `WECPBXR.Core` - модель банков, движок маппинга, конфигурация MIDI/OSC-карты, каталог команд микшера и логика soft takeover.
 - `WECPBXR.Hardware` - работа с MIDI-входом, OSC-клиент микшера и сканер локальной сети.
 
@@ -305,12 +303,6 @@ dotnet run --project WECPBXR.UI
 ```powershell
 dotnet publish WECPBXR.UI -c Release -r win-x64 --self-contained true
 dotnet publish WECPBXR.UI -c Release -r linux-x64 --self-contained true
-```
-
-Запуск диагностической консоли:
-
-```powershell
-dotnet run --project WECPBXR.Console
 ```
 
 ## Проверка контрольных сумм релиза
@@ -376,9 +368,17 @@ update-desktop-database ~/.local/share/applications 2>/dev/null || true
 7. Двигайте фейдер, энкодер или кнопку на MIDI-контроллере.
 8. Если плавный контрол заблокирован soft takeover, двигайте его до текущего значения микшера; после совпадения WECPBXR начнёт отправлять OSC-изменения.
 
+## Скины контроллеров
+
+В WECPBXR предусмотрены отдельные варианты интерфейса для контроллеров Worlde Easycontrol Plus и AKAI MIDImix. Чтобы сменить активный скин, нажмите правой кнопкой мыши по логотипу `WORLDE` или `AKAI` в левой верхней части контроллера и выберите в контекстном меню `WORLDE Easycontrol Plus` или `AKAI MIDImix`.
+
+При смене скина меняются компоновка контроллера и расположение MIDI-элементов, а подключения приложения и общее рабочее состояние сохраняются. Выбранный скин запоминается и используется при следующем запуске. Если в текущей MIDI/OSC-карте есть несохранённые изменения, сначала сохраните её: WECPBXR блокирует переключение, чтобы эти изменения не потерялись.
+
+Чтобы изменить количество программных банков, нажмите правой кнопкой мыши по цветной плашке банка и выберите значение от `1` до `16`. Выбранное количество запоминается. Новые банки создаются как пустые пользовательские банки, а при уменьшении количества последние банки удаляются после сохранения карты. Перед изменением количества сохраните текущую карту, а затем сохраните её ещё раз, чтобы зафиксировать новый набор банков.
+
 ## Карта назначений
 
-Карта по умолчанию хранится в `WECPBXR.Console/midi-map.json` и копируется в выходную папку UI как `midi-map.json`. В карте описаны банки, подписи контролов, MIDI-привязки и OSC-привязки микшера.
+Карта по умолчанию хранится в `WECPBXR.UI/midi-map.json` и копируется в выходную папку UI как `midi-map.json`. В карте описаны банки, подписи контролов, MIDI-привязки и OSC-привязки микшера.
 
 В desktop-интерфейсе нажмите `Assign`, чтобы перейти в режим назначения. Выберите контрол, укажите команду, канал и индекс, затем нажмите `Set`. Кнопка `Learn` назначает выбранному программному контролу следующее входящее MIDI-событие. Кнопка `Save` сохраняет обновлённую карту.
 
@@ -402,6 +402,8 @@ OSC-команды для snapshots и tap tempo добавлены как пр�
 
 Настройте Miwayer Worlde Easycontrol Plus так, чтобы все органы управления отправляли MIDI Control Change на MIDI-канале `1`.
 
+В репозиторий добавлен готовый пресет контроллера: [`WECPBXR default.easycontplus`](WECPBXR%20default.easycontplus). Откройте или импортируйте этот файл в редакторе конфигурации Easycontrol Plus, а затем загрузите пресет в контроллер. Если текущие настройки могут понадобиться позже, сначала сохраните их резервную копию.
+
 | Контрол | MIDI-канал | CC number |
 | --- | ---: | ---: |
 | Knob 1-24 | 1 | 1-24 |
@@ -424,8 +426,6 @@ OSC-команды для snapshots и tap tempo добавлены как пр�
 - `fx` - уровень посыла входного канала на FX 1-4.
 - `bus-on` - включение/выключение посыла входного канала на bus 1-6.
 - `fx-on` - включение/выключение посыла входного канала на FX 1-4.
-
-Диагностическая консоль дополнительно поддерживает команды `map list`, `map show`, `map set`, `map clear`, `map save` и `map commands`.
 
 ## Текущие ограничения
 

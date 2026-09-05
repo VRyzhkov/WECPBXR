@@ -30,6 +30,8 @@ public sealed class MidiApplicationSettings
 public sealed class ControllerApplicationSettings
 {
     public string ProfileId { get; set; } = "wecpbxr-default";
+
+    public int BankCount { get; set; } = 8;
 }
 
 public sealed class MapApplicationSettings
