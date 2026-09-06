@@ -220,7 +220,7 @@ If this project saved your time or helped your setup, you can support the author
 
 | Регион / Region | Способ оплаты / Payment Method | Ссылка / Link |
 | :--- | :--- | :--- |
-| **🇷🇺 Для пользователей из РФ** | Карта любого банка РФ / СБП | [![Donate](https://shields.io)](https://cloudtips.ru) |
+| **🇷🇺 Для пользователей из РФ** | Карта любого банка РФ / СБП | [![Donate](https://shields.io)](https://pay.cloudtips.ru/p/c7151242) |
 | **🌐 International / Crypto** | **USDT / ETH / BNB** *(Network: BSC BEP-20 or Ethereum)* | `0x90E87117C67344a7daeD7cb8d1d03267de03FF08` |
 
 ---

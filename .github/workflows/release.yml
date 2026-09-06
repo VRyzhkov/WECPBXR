@@ -3,73 +3,111 @@ name: Publish Release
 on:
   push:
     tags:
-      - 'v*' # Запуск сборки при создании тегов вроде v1.0.0-beta
+      - 'v*'
 
 jobs:
-  build:
-    runs-on: windows-latest 
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Install Velopack CLI
+        shell: pwsh
+        run: dotnet tool install --global vpk --version 1.2.0
+      - name: Read version from tag
+        shell: pwsh
+        run: |
+          $version = "${{ github.ref_name }}".TrimStart("v")
+          "WECPBXR_VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Append
+          "WECPBXR_INFORMATIONAL_VERSION=${{ github.ref_name }}" | Out-File -FilePath $env:GITHUB_ENV -Append
+      - name: Publish UI Windows
+        shell: pwsh
+        run: |
+          dotnet publish WECPBXR.UI/WECPBXR.UI.csproj -c Release -r win-x64 --self-contained true -o ./publish/win-x64 -p:Version=$env:WECPBXR_VERSION -p:InformationalVersion=$env:WECPBXR_INFORMATIONAL_VERSION
+      - name: Package UI Windows with Velopack
+        shell: pwsh
+        run: |
+          vpk pack --packId VRyzhkov.WECPBXR.UI --packTitle WECPBXR --packAuthors VRyzhkov --packVersion $env:WECPBXR_VERSION --packDir ./publish/win-x64 --mainExe WECPBXR.UI.exe --channel win --runtime win-x64 --outputDir ./velopack/win --icon ./WECPBXR.UI/Assets/midi-connector.ico
+      - name: Generate Windows SHA256 checksums
+        shell: pwsh
+        run: |
+          Get-ChildItem ./velopack/win -File |
+            Where-Object { $_.Name -notlike '*.sha256' } |
+            ForEach-Object {
+              $hash = Get-FileHash $_.FullName -Algorithm SHA256
+              "$($hash.Hash.ToLowerInvariant())  $($_.Name)" | Out-File "$($_.FullName).sha256" -Encoding ascii
+            }
+      - name: Upload Windows release assets
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-windows
+          path: velopack/win/*
+          if-no-files-found: error
+
+  build-linux:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+      - name: Install Velopack CLI
+        run: dotnet tool install --global vpk --version 1.2.0
+      - name: Read version from tag
+        shell: bash
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          echo "WECPBXR_VERSION=$version" >> "$GITHUB_ENV"
+          echo "WECPBXR_INFORMATIONAL_VERSION=$GITHUB_REF_NAME" >> "$GITHUB_ENV"
+      - name: Publish UI Linux
+        run: |
+          dotnet publish WECPBXR.UI/WECPBXR.UI.csproj -c Release -r linux-x64 --self-contained true -o ./publish/linux-x64 -p:Version="$WECPBXR_VERSION" -p:InformationalVersion="$WECPBXR_INFORMATIONAL_VERSION"
+      - name: Package UI Linux with Velopack
+        run: |
+          vpk pack --packId VRyzhkov.WECPBXR.UI.Linux --packTitle WECPBXR --packAuthors VRyzhkov --packVersion "$WECPBXR_VERSION" --packDir ./publish/linux-x64 --mainExe WECPBXR.UI --channel linux --runtime linux-x64 --outputDir ./velopack/linux --icon ./WECPBXR.UI/Assets/midi-connector.png
+      - name: Generate Linux SHA256 checksums
+        shell: bash
+        run: |
+          find ./velopack/linux -maxdepth 1 -type f ! -name '*.sha256' -print0 | while IFS= read -r -d '' file; do
+            hash="$(sha256sum "$file" | cut -d ' ' -f 1)"
+            printf '%s  %s\n' "$hash" "$(basename "$file")" > "$file.sha256"
+          done
+      - name: Upload Linux release assets
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-linux
+          path: velopack/linux/*
+          if-no-files-found: error
+
+  release:
+    runs-on: ubuntu-latest
+    needs:
+      - build-windows
+      - build-linux
     permissions:
       contents: write
-
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Setup .NET
-      uses: actions/setup-dotnet@v4
-      with:
-        dotnet-version: '8.0.x'
-
-    - name: Install Velopack CLI
-      shell: pwsh
-      run: |
-        dotnet tool install --global vpk --version 1.2.0
-
-    - name: Read version from tag
-      shell: pwsh
-      run: |
-        $version = "${{ github.ref_name }}"
-        if ($version.StartsWith("v")) {
-          $version = $version.Substring(1)
-        }
-        "WECPBXR_VERSION=$version" | Out-File -FilePath $env:GITHUB_ENV -Append
-        "WECPBXR_INFORMATIONAL_VERSION=${{ github.ref_name }}" | Out-File -FilePath $env:GITHUB_ENV -Append
-
-    # 1. Публикация графической версии (UI) под Windows
-    - name: Publish UI Windows
-      shell: pwsh
-      run: |
-        dotnet publish WECPBXR.UI/WECPBXR.UI.csproj -c Release -r win-x64 --self-contained true -o ./publish/WECPBXR_UI_win-x64 -p:Version=$env:WECPBXR_VERSION -p:InformationalVersion=$env:WECPBXR_INFORMATIONAL_VERSION
-
-    # 2. Публикация графической версии (UI) под Linux
-    - name: Publish UI Linux
-      shell: pwsh
-      run: |
-        dotnet publish WECPBXR.UI/WECPBXR.UI.csproj -c Release -r linux-x64 --self-contained true -o ./publish/WECPBXR_UI_linux-x64 -p:Version=$env:WECPBXR_VERSION -p:InformationalVersion=$env:WECPBXR_INFORMATIONAL_VERSION
-
-    # 3. Упаковка артефактов
-    - name: Package UI with Velopack
-      shell: pwsh
-      run: |
-        vpk pack --packId VRyzhkov.WECPBXR.UI --packTitle WECPBXR --packAuthors VRyzhkov --packVersion $env:WECPBXR_VERSION --packDir ./publish/WECPBXR_UI_win-x64 --mainExe WECPBXR.UI.exe --channel win --runtime win-x64 --outputDir ./velopack/win --icon ./WECPBXR.UI/Assets/midi-connector.ico
-        vpk pack --packId VRyzhkov.WECPBXR.UI --packTitle WECPBXR --packAuthors VRyzhkov --packVersion $env:WECPBXR_VERSION --packDir ./publish/WECPBXR_UI_linux-x64 --mainExe WECPBXR.UI --channel linux --runtime linux-x64 --outputDir ./velopack/linux --icon ./WECPBXR.UI/Assets/midi-connector.png
-
-    - name: Generate SHA256 Checksums
-      shell: pwsh
-      run: |
-        Get-ChildItem ./velopack/win, ./velopack/linux -File |
-          Where-Object { $_.Name -notlike '*.sha256' } |
-          ForEach-Object {
-            $hash = Get-FileHash $_.FullName -Algorithm SHA256
-            "$($hash.Hash.ToLowerInvariant())  $($_.Name)" | Out-File "$($_.FullName).sha256" -Encoding ascii
-          }
-
-    # 4. Создание релиза на GitHub
-    - name: Create GitHub Release
-      uses: softprops/action-gh-release@v2
-      with:
-        files: |
-          velopack/win/*
-          velopack/linux/*
-        generate_release_notes: true
-        prerelease: true # Автоматически ставит отметку Pre-release (Бета)
+      - name: Download Windows release assets
+        uses: actions/download-artifact@v4
+        with:
+          name: release-windows
+          path: release-assets/windows
+      - name: Download Linux release assets
+        uses: actions/download-artifact@v4
+        with:
+          name: release-linux
+          path: release-assets/linux
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            release-assets/windows/*
+            release-assets/linux/*
+          generate_release_notes: true
+          prerelease: true
