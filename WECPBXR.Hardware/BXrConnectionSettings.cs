@@ -8,7 +8,7 @@ public sealed class BXrConnectionSettings
     public const int DefaultXRemoteIntervalSeconds = 5;
 
     public BXrConnectionSettings(string mixerAddress)
-        : this(mixerAddress, DefaultOscPort, IPAddress.Any, DefaultOscPort, TimeSpan.FromSeconds(DefaultXRemoteIntervalSeconds))
+        : this(mixerAddress, DefaultOscPort, IPAddress.Any, 0, TimeSpan.FromSeconds(DefaultXRemoteIntervalSeconds))
     {
     }
 

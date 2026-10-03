@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Net;
+using System.Net.Sockets;
 using Rug.Osc;
 
 namespace WECPBXR.Hardware;
@@ -10,8 +11,8 @@ public sealed class BXrMixerClient(
     private readonly BXrConnectionSettings _settings = settings ?? throw new ArgumentNullException(nameof(settings));
     private readonly object _sendLock = new();
 
-    private OscSender? _sender;
-    private OscReceiver? _receiver;
+    private UdpClient? _udpClient;
+    private TaskCompletionSource<bool>? _connectionConfirmed;
     private CancellationTokenSource? _lifetimeCts;
     private Task? _receiveTask;
     private Task? _xRemoteTask;
@@ -33,38 +34,46 @@ public sealed class BXrMixerClient(
         IPAddress mixerAddress = await ResolveMixerAddressAsync(_settings.MixerAddress, cancellationToken)
             .ConfigureAwait(false);
 
-        _sender = new OscSender(mixerAddress, _settings.MixerPort);
-        _receiver = new OscReceiver(_settings.LocalAddress, _settings.LocalPort);
+        try
+        {
+            // XR replies and /xremote updates target the request's source IP/port.
+            // Sending and receiving must therefore share the same UDP socket.
+            _udpClient = new UdpClient(new IPEndPoint(_settings.LocalAddress, _settings.LocalPort));
+            _udpClient.Connect(mixerAddress, _settings.MixerPort);
+            _connectionConfirmed = new(TaskCreationOptions.RunContinuationsAsynchronously);
+            _lifetimeCts = new CancellationTokenSource();
+            CancellationToken lifetimeToken = _lifetimeCts.Token;
+            _receiveTask = Task.Run(() => ReceiveLoopAsync(lifetimeToken), CancellationToken.None);
+            _xRemoteTask = Task.Run(() => XRemoteLoop(lifetimeToken), CancellationToken.None);
 
-        _sender.Connect();
-        _receiver.Connect();
-
-        _lifetimeCts = new CancellationTokenSource();
-        _receiveTask = Task.Run(() => ReceiveLoop(_lifetimeCts.Token), CancellationToken.None);
-        _xRemoteTask = Task.Run(() => XRemoteLoop(_lifetimeCts.Token), CancellationToken.None);
-
-        SendXRemote();
+            SendXRemote();
+            SendMessage(new OscMessage("/xinfo"));
+            await _connectionConfirmed.Task.WaitAsync(TimeSpan.FromSeconds(3), cancellationToken)
+                .ConfigureAwait(false);
+        }
+        catch (TimeoutException)
+        {
+            await StopAsync().ConfigureAwait(false);
+            throw new TimeoutException($"No OSC response from XR mixer at {_settings.MixerAddress}:{_settings.MixerPort}. Check the address, network and firewall.");
+        }
+        catch
+        {
+            await StopAsync().ConfigureAwait(false);
+            throw;
+        }
     }
 
     public async Task StopAsync()
     {
-        if (_lifetimeCts is null)
-        {
-            return;
-        }
-
-        _lifetimeCts.Cancel();
-        _receiver?.Close();
+        _lifetimeCts?.Cancel();
+        _udpClient?.Dispose();
 
         await WaitForBackgroundTasksAsync().ConfigureAwait(false);
 
-        _sender?.Close();
-        _sender?.Dispose();
-        _receiver?.Dispose();
-        _lifetimeCts.Dispose();
+        _lifetimeCts?.Dispose();
 
-        _sender = null;
-        _receiver = null;
+        _udpClient = null;
+        _connectionConfirmed = null;
         _lifetimeCts = null;
         _receiveTask = null;
         _xRemoteTask = null;
@@ -106,7 +115,8 @@ public sealed class BXrMixerClient(
             throw new ArgumentException("OSC address is required.", nameof(oscAddress));
         }
 
-        object oscValue = sendInteger ? (int)Math.Round(value) : (float)value;
+        // Box the integer before the conditional can promote it to a float.
+        object oscValue = sendInteger ? (object)(int)Math.Round(value) : (float)value;
         SendMessage(new OscMessage(oscAddress, oscValue));
 
         return Task.CompletedTask;
@@ -173,13 +183,15 @@ public sealed class BXrMixerClient(
         }
     }
 
-    private void ReceiveLoop(CancellationToken cancellationToken)
+    private async Task ReceiveLoopAsync(CancellationToken cancellationToken)
     {
         while (!cancellationToken.IsCancellationRequested)
         {
             try
             {
-                OscPacket packet = _receiver?.Receive() ?? throw new ObjectDisposedException(nameof(OscReceiver));
+                UdpClient client = _udpClient ?? throw new ObjectDisposedException(nameof(UdpClient));
+                UdpReceiveResult result = await client.ReceiveAsync(cancellationToken).ConfigureAwait(false);
+                OscPacket packet = OscPacket.Read(result.Buffer, result.Buffer.Length, result.RemoteEndPoint);
                 PrintPacket(packet);
                 RaiseMessageEvents(packet);
             }
@@ -225,12 +237,12 @@ public sealed class BXrMixerClient(
     {
         ThrowIfDisposed();
 
-        OscSender sender = _sender ?? throw new InvalidOperationException("XR mixer client is not started.");
+        UdpClient client = _udpClient ?? throw new InvalidOperationException("XR mixer client is not started.");
 
         lock (_sendLock)
         {
-            sender.Send(message);
-            sender.WaitForAllMessagesToComplete();
+            byte[] bytes = message.ToByteArray();
+            client.Send(bytes, bytes.Length);
         }
     }
 
@@ -255,6 +267,11 @@ public sealed class BXrMixerClient(
     {
         if (packet is OscMessage message)
         {
+            if (message.Address == "/xinfo" && message.Count > 0)
+            {
+                _connectionConfirmed?.TrySetResult(true);
+            }
+
             MessageReceived?.Invoke(this, new BXrOscMessageReceivedEventArgs(message));
             return;
         }
